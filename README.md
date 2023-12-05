@@ -7,7 +7,7 @@ This project is a Flask-based web application that allows users to upload PDF fi
 This project requires Python 3.6 or later. Clone the repository and install the required packages:
 
 ```
-git clone https://github.com/aarongommisi/isidashboard.git
+git clone https://github.com/hapiuk/isitools.git
 cd isidashboard
 pip install -r requirements.txt
 
