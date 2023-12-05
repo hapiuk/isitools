@@ -1,0 +1,77 @@
+<!doctype html>
+<html>
+<head>
+  <title>ISI - Company Dashboard</title>
+  <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<head>
+  <title>ISI - Asset Tracker</title>
+  <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+{% include 'header.html' %}
+
+  <!-- Dashboard section -->
+
+
+  <div id="dashboardlayout">
+    <div id="dashboard">
+      <h2>Useful Links</h2>
+      <a href="https://isisafety.com/" class="dashboard-button">Company Website</a>
+      <a href="https://live.servicesight.com/" class="dashboard-button">ServiceSight</a>
+      <a href="https://isisafetylimited.sharepoint.com/sites/QualityManagement/Documents/Forms/AllItems.aspx?id=%2Fsites%2FQualityManagement%2FDocuments%2FNew%20Quality%2FISI%20Staff%20Documentation&viewid=8bfbc8be%2Dc853%2D4293%2D96f0%2D75eb56702188" class="dashboard-button">Quality Management</a>
+    </div>
+    <div id="dashboard">
+      <h2>Tools</h2>
+      <a href="/upload" class="dashboard-button">AECOM Report Tool</a>
+      <a href="/assettracker" class="dashboard-button">Asset Tracker</a>
+    </div>
+    <div id="dashboard">
+      <h2>Technical Support</h2>
+      <a href="mailto:aarongomm@isisafety.com?subject=IT%20Support%20Request" class="dashboard-button">Submit Support Request</a>
+      <a href="mailto:aarongomm@isisafety.com?cc=mickgrist@isisafety.com;julie@isisafety.com&subject=IT%20Kit%20Request" class="dashboard-button">Submit Kit Request</a>
+      <a href="https://eu08.manage.samsungknox.com/emm/admin/secured/emm_main.do" class="dashboard-button">Knox Manage</a>
+    </div>
+    <div id="dashboard">
+      <h2>Other</h2>
+      <a href="/quiz" class="dashboard-button">Engineer Mock Exam</a>
+      <a href="/leaderboard" class="dashboard-button">Mock Exam - Results</a>
+    </div>
+  </div>
+  <script>
+  var modal1 = document.getElementById("myModal");
+  var btn1 = document.getElementById("myBtn");
+  var span1 = document.getElementsByClassName("close")[0];
+
+  btn1.onclick = function() {
+    modal1.style.display = "block";
+  }
+
+  span1.onclick = function() {
+    modal1.style.display = "none";
+  }
+
+  var modal2 = document.getElementById("myModal2");
+  var btn2 = document.getElementById("myBtn2");
+  var span2 = document.getElementsByClassName("close2")[0];
+
+  btn2.onclick = function() {
+    modal2.style.display = "block";
+  }
+
+  span2.onclick = function() {
+    modal2.style.display = "none";
+  }
+
+  window.onclick = function(event) {
+    if (event.target == modal1) {
+      modal1.style.display = "none";
+    }
+    if (event.target == modal2) {
+      modal2.style.display = "none";
+    }
+  }
+  </script>
+</body>
+</html>

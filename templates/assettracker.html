@@ -1,0 +1,244 @@
+<!doctype html>
+<html>
+<head>
+    <title>ISI - Asset Tracker</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/style.css') }}">
+
+    <!-- Include jQuery (required for DataTables) -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <!-- Include DataTables CSS -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.11.10/css/jquery.dataTables.min.css">
+
+    <!-- Include DataTables JavaScript -->
+    <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.11.10/js/jquery.dataTables.min.js"></script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            // Open the Add Asset Modal
+            document.getElementById('add-asset-button').onclick = function() {
+                document.getElementById('add-asset-modal').style.display = 'block';
+
+                // Automatically generate and set the ISI number
+                var assetTable = document.getElementById('assets-table');
+                var assetCount = assetTable.rows.length - 1; // Subtract 1 for the header row
+                var newISINumber = 'ISI' + ('00' + (assetCount + 1)).slice(-3);
+                document.getElementById('isi_number').value = newISINumber;
+            }
+
+            // Close the Add Asset Modal
+            document.getElementsByClassName('close')[0].onclick = function() {
+                document.getElementById('add-asset-modal').style.display = 'none';
+            }
+        });
+
+        function searchAssets() {
+            const searchInput = document.getElementById('search').value;
+            const url = `/assettracker?search=${searchInput}`;
+            window.location.href = url;
+        }
+
+        function handleSearch(event) {
+            if (event.key === "Enter") {
+                searchAssets();
+            }
+        }
+
+        function addAsset() {
+            var form = document.getElementById('add-asset-form');
+
+            // Perform the form submission using AJAX
+            var formData = new FormData(form);
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', '/save-asset', true);
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    // You can handle the response here
+                }
+            };
+            xhr.send(formData);
+        }
+
+        function editAsset(isiNumber) {
+            // Call getAssetDetails and pass a callback function to handle the result
+            getAssetDetails(isiNumber, function(assetDetails) {
+                if (assetDetails) {
+                    // Pre-fill the fields in the edit modal with the asset details
+                    document.getElementById('edit-isi_number').value = assetDetails.isi_number;
+                    document.getElementById('edit-device_type').value = assetDetails.device_type;
+                    document.getElementById('edit-make_model').value = assetDetails.make_model;
+                    document.getElementById('edit-serial_number').value = assetDetails.serial_number;
+                    document.getElementById('edit-imei').value = assetDetails.imei;
+                    document.getElementById('edit-mac_address').value = assetDetails.mac_address;
+                    document.getElementById('edit-allocated_user').value = assetDetails.allocated_user;
+
+                    // Display the edit modal
+                    document.getElementById('edit-asset-modal').style.display = 'block';
+                } else {
+                    alert('Asset details not found.');
+                }
+            });
+        }
+
+        function closeEditAssetModal() {
+            // Close the edit modal
+            document.getElementById('edit-asset-modal').style.display = 'none';
+        }
+
+        function getAssetDetails(isiNumber, callback) {
+            // Make an AJAX request to the server to fetch asset details
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', '/get-asset-details/' + isiNumber, true);
+
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4 && xhr.status === 200) {
+                    var assetDetails = JSON.parse(xhr.responseText);
+
+                    if (callback) {
+                        callback(assetDetails); // Pass the asset details to the callback function
+                    }
+                }
+            };
+
+            xhr.send();
+        }
+
+        document.addEventListener("DOMContentLoaded", function() {
+            // Initialize DataTable on your table
+            $('#assets-table').DataTable();
+        });
+    </script>
+</head>
+<body>
+{% include 'header.html' %}
+<!-- Add Asset Modal -->
+<div id="add-asset-modal" class="modal">
+    <div class="modal-content" style="width: 45%; margin-top: 1%;">
+        <span class="close">&times;</span>
+        <h2>Add New Asset</h2>
+        <form action="/save-asset" method="post">
+            <input type="hidden" name="isi_number" id="isi_number">
+
+            <label for="device_type">Device Type:</label>
+            <input type="text" name="device_type" id="device_type" required>
+
+            <label for="make_model">Make/Model:</label>
+            <input type="text" name="make_model" id="make_model" required>
+
+            <label for="serial_number">Serial Number:</label>
+            <input type="text" name="serial_number" id="serial_number">
+
+            <label for="imei">IMEI Number:</label>
+            <input type="text" name="imei" id="imei" required>
+
+            <label for="mac_address">MAC Address:</label>
+            <input type="text" name="mac_address" id="mac_address" required>
+
+            <label for="allocated_user">Allocated User:</label>
+            <input type="text" name="allocated_user" id="allocated_user" required>
+
+            <input type="submit" value="Add Asset">
+        </form>
+    </div>
+</div>
+
+<div>
+    <div id="add-asset-button" class="add-asset-button dashboard-button">Add/Assign Asset</div>
+</div>
+
+<!-- View Assets -->
+<table id="assets-table" style="width: 100%; margin-top: 10px;">
+    <thead>
+        <tr>
+            <th sortable="true">ISI Number</th>
+            <th sortable="true">Device Type</th>
+            <th sortable="true">Make/Model</th>
+            <th sortable="true">Serial Number</th>
+            <th sortable="true">IMEI Number</th>
+            <th sortable="true">MAC Address</th>
+            <th sortable="true">Allocated User</th>
+            <th sortable="true">Date Stamp</th>
+            <th></th>
+        </tr>
+    </thead>
+    <!-- Display assets from the database -->
+    {% for asset in assets %}
+        <tr>
+            <td>{{ asset.isi_number }}</td>
+            <td>{{ asset.device_type }}</td>
+            <td>{{ asset.make_model }}</td>
+            <td>{{ asset.serial_number }}</td>
+            <td>{{ asset.imei }}</td>
+            <td>{{ asset.mac_address }}</td>
+            <td>{{ asset.allocated_user }}</td>
+            <td>{{ asset.date_stamp }}</td>
+            <td>
+                <button class="edit-button" onclick="editAsset('{{ asset.isi_number }}')">Edit</button>
+            </td>
+        </tr>
+    {% endfor %}
+</table>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        $('#assets-table').DataTable();
+    });
+</script>
+
+
+<!-- Add pagination controls -->
+<div class="pagination">
+    <ul>
+        {% if current_page > 1 %}
+            <li><a href="{{ url_for('assettracker', page=current_page-1, search=search_query) }}">&laquo; Previous</a></li>
+        {% else %}
+            <li class="disabled"><span>&laquo; Previous</span></li>
+        {% endif %}
+        
+        {% for page_num in range(1, total_pages + 1) %}
+            <li class="{% if page_num == current_page %}active{% endif %}">
+                <a href="{{ url_for('assettracker', page=page_num, search=search_query) }}">{{ page_num }}</a>
+            </li>
+        {% endfor %}
+        
+        {% if current_page < total_pages %}
+            <li><a href="{{ url_for('assettracker', page=current_page+1, search=search_query) }}">Next &raquo;</a></li>
+        {% else %}
+            <li class="disabled"><span>Next &raquo;</span></li>
+        {% endif %}
+    </ul>
+</div>
+
+
+<!-- Modal for editing asset details -->
+<div id="edit-asset-modal" class="modal">
+    <div class="modal-content" style="width: 60%; margin-top: 1%;">
+        <span class="close" onclick="closeEditAssetModal()">&times;</span>
+        <h2>Edit Asset Details</h2>
+        <form id="edit-asset-form" action="/update-asset" method="post">
+            <input type="hidden" name="isi_number" id="edit-isi_number">
+
+            <label for="edit-device_type">Device Type:</label>
+            <input type="text" name="device_type" id="edit-device_type" required>
+
+            <label for="edit-make_model">Make/Model:</label>
+            <input type="text" name="make_model" id="edit-make_model" required>
+
+            <label for="edit-serial_number">Serial Number:</label>
+            <input type="text" name="serial_number" id="edit-serial_number">
+
+            <label for="edit-imei">IMEI Number:</label>
+            <input type="text" name="imei" id="edit-imei" required>
+
+            <label for="edit-mac_address">MAC Address:</label>
+            <input type="text" name="mac_address" id="edit-mac_address" required>
+
+            <label for="edit-allocated_user">Allocated User:</label>
+            <input type="text" name="allocated_user" id="edit-allocated_user" required>
+
+            <input type="submit" value="Update Asset">
+        </form>
+    </div>
+</div>
+
+</body>
+</html>
