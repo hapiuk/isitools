@@ -31,9 +31,6 @@ This script is used to extract data from uploaded PDFs. It extracts specific inf
 python pdfextract.py --input input_folder --output output_folder --processed processed_folder --business_entity business_entity
 ```
 
-*Note: Replace input_folder, output_folder, processed_folder, and business_entity with your actual parameters.*
-
-
 # Web Pages
 
 
