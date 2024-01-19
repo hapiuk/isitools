@@ -26,7 +26,7 @@ app.secret_key = 'Is1S3cr3tk3y'
 logging.basicConfig(level=logging.INFO)
 
 # Database Configuration
-DATABASE = './static/exam_results.db'
+DATABASE = './static/isidatabase.db'
 
 def get_db():
     conn = sqlite3.connect(DATABASE)
@@ -64,8 +64,32 @@ def create_assets_table():
     ''')
     conn.commit()
     conn.close()
+
+def create_aecomjobs_table():
+    conn = get_db()
+    conn.execute('''
+        CREATE TABLE IF NOT EXISTS aecom_inspections(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            Type TEXT,
+            inspection_ref TEXT,       
+            inspection_date DATE,      
+            contractor TEXT,
+            document TEXT,
+            remedial_works TEXT,
+            complete TEXT,
+            business_entity TEXT,
+            site_name TEXT,
+            invoice_group TEXT,
+            invoiced TEXT,
+            value NUMERIC
+        )
+    ''')
+    conn.commit()
+    conn.close()
+
 create_table()
 create_assets_table()
+create_aecomjobs_table()
 
 @app.route('/', methods=['GET'])
 def root():
@@ -75,13 +99,36 @@ def root():
 def quiz():
     return render_template('mockexam.html')
 
-@app.route('/assettracker')
-def assettracker():
-    page = request.args.get('page', 1, type=int)
+@app.route('/client01')
+def client01():
     search_query = request.args.get('search', '', type=str)
     success_message = request.args.get('success', '')
     error_message = request.args.get('error', '')
-    assets_per_page = 25  # Number of assets to show per page
+
+    conn = get_db()
+    
+    # Implement filtering based on the search query
+    if search_query:
+        assets = conn.execute('''
+            SELECT * FROM aecom_inspections
+            WHERE (Type LIKE ? OR inspection_ref LIKE ? OR inspection_ref LIKE ? OR contractor LIKE ? OR document LIKE ? OR remedial_works LIKE ? OR complete LIKE ? OR business_entity LIKE ? OR site_name LIKE ? OR invoice_group LIKE ? OR invoiced LIKE ? OR value LIKE ?)
+            ORDER BY id
+            LIMIT ? OFFSET ?
+        ''', (f"%{search_query}%",) * 8 + (assets_per_page, (page - 1) * assets_per_page)).fetchall()
+    else:
+        inspections = conn.execute('''
+            SELECT * FROM aecom_inspections
+            ORDER BY id
+        ''',).fetchall()
+
+    conn.close()
+    return render_template('client01.html', inspections=inspections, success_message=success_message, error_message=error_message)
+
+@app.route('/assettracker')
+def assettracker():
+    search_query = request.args.get('search', '', type=str)
+    success_message = request.args.get('success', '')
+    error_message = request.args.get('error', '')
 
     conn = get_db()
     
@@ -97,14 +144,10 @@ def assettracker():
         assets = conn.execute('''
             SELECT * FROM assets
             ORDER BY id
-            LIMIT ? OFFSET ?
-        ''', (assets_per_page, (page - 1) * assets_per_page)).fetchall()
-
-    total_assets = conn.execute('SELECT COUNT(*) FROM assets').fetchone()[0]
-    total_pages = (total_assets + assets_per_page - 1) // assets_per_page
+        ''',).fetchall()
 
     conn.close()
-    return render_template('assettracker.html', assets=assets, success_message=success_message, error_message=error_message, total_pages=total_pages, current_page=page)
+    return render_template('assettracker.html', assets=assets, success_message=success_message, error_message=error_message)
 
 @app.route('/get-asset-details/<isi_number>', methods=['GET'])
 def get_asset_details(isi_number):
@@ -336,5 +379,24 @@ def save_results():
     return jsonify({'message': 'Results saved successfully'})
 
 if __name__ == "__main__":
-    app.secret_key = 'Is1S3cr3tk3y'
-    app.run(host='192.168.0.28', port=5000)
+    import socket
+
+    def is_valid_ip(ip):
+        try:
+            socket.inet_aton(ip)
+            return True
+        except socket.error:
+            return False
+
+    ip_address = None
+    while True:
+        ip_address = input("Enter the IP address to run the app (e.g., 0.0.0.0): ")
+        if is_valid_ip(ip_address):
+            break
+        else:
+            print("Invalid IP address. Please enter a valid IP address.")
+
+    print(f"Running the app at IP address: {ip_address}")
+
+    app.secret_key = 'topsecret'
+    app.run(host=ip_address, port=5000, debug=True)
