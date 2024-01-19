@@ -232,7 +232,7 @@ def process_files():
     script_path = "./static/pdfextract.py"
 
     command = [
-        "python",
+        "python3",
         script_path,
         "--input",
         UPLOAD_FOLDER,
