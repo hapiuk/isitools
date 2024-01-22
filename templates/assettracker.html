@@ -1,6 +1,7 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en" data-bs-theme="dark">
-  <head>
+
+<head>
     <title>Industrial Safety Inspections - Assets</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.0/css/bootstrap.min.css">
@@ -10,11 +11,12 @@
     <script type="text/javascript" language="javascript" src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.min.js" integrity="sha384-BBtl+eGJRgqQAUMxJ7pMwbEyER4l1g+O15P+16Ep7Q9Q+zqX6gSbd85u4mG4QzX+" crossorigin="anonymous"></script>
     <script type="text/javascript" language="javascript" src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
     <script type="text/javascript" language="javascript" src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
-  </head>
-  <body>
+</head>
+
+<body>
     <nav class="navbar bg-body-tertiary fixed-top" style="background-color: #1D71BE;">
       <div class="container-fluid">
-        <a class="navbar-brand" href="#">Industrial Safety Inspections - Asset Tracking</a>
+        <a class="navbar-brand" href="#">Industrial Safety Inspections - AECOM</a>
         <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar" aria-label="Toggle navigation">
           <span class="navbar-toggler-icon"></span>
         </button>
@@ -68,9 +70,9 @@
     <div class="container" style="padding: 1.5%;">
         .
     </div>
-    <!-- Clients Page Contents-->
+    <!-- Assets Page Contents -->
     <div class="container-fluid">
-        <table class="table table-striped table-hover" style="cursor: pointer;" id="assets-table" >
+        <table class="table table-striped table-hover" style="cursor: pointer;" id="assets-table">
             <thead>
                 <tr>
                     <th sortable="true">ISI Asset Number</th>
@@ -83,31 +85,23 @@
                     <th sortable="true">Date Stamp</th>
                 </tr>
             </thead>
-            <!-- Display clients from the database -->
+            <!-- Display assets from the database -->
             {% for asset in assets %}
-                <tr class="clickable-row" 
-                    data-account-number="{{ asset.isi_number }}" 
-                    data-client-name="{{ asset.device_type }}" 
-                    data-address-1="{{ asset.make_model }}" 
-                    data-address-2="{{ asset.serial_number }}"
-                    data-town-city="{{ asset.imei }}" 
-                    data-county="{{ asset.mac_address }}" 
-                    data-email="{{ asset.allocated_user }}" 
-                    data-phone="{{ asset.date_stamp }}">
-                    <td>{{ asset.isi_number }}</td>
-                    <td>{{ asset.device_type }}</td>
-                    <td>{{ asset.make_model }}</td>
-                    <td>{{ asset.serial_number }}</td>
-                    <td>{{ asset.imei }}</td>
-                    <td>{{ asset.mac_address }}</td>
-                    <td>{{ asset.allocated_user }}</td>
-                    <td>{{ asset.date_stamp }}</td>
-                </tr>
+            <tr class="clickable-row" data-isi-number="{{ asset.isi_number }}" data-device-type="{{ asset.device_type }}" data-make-model="{{ asset.make_model }}" data-serial-number="{{ asset.serial_number }}" data-imei="{{ asset.imei }}" data-mac-address="{{ asset.mac_address }}" data-allocated-user="{{ asset.allocated_user }}" data-date-stamp="{{ asset.date_stamp }}">
+                <td>{{ asset.isi_number }}</td>
+                <td>{{ asset.device_type }}</td>
+                <td>{{ asset.make_model }}</td>
+                <td>{{ asset.serial_number }}</td>
+                <td>{{ asset.imei }}</td>
+                <td>{{ asset.mac_address }}</td>
+                <td>{{ asset.allocated_user }}</td>
+                <td>{{ asset.date_stamp }}</td>
+            </tr>
             {% endfor %}
-                <tfoot>
-                  <tr>
+            <tfoot>
+                <tr>
                     <th>
-                      <button type="button" data-bs-toggle="modal" data-bs-target="#add-asset" class="btn btn-primary">Create Asset</button>
+                        <button type="button" data-bs-toggle="modal" data-bs-target="#add-asset" class="btn btn-primary">Create Asset</button>
                     </th>
                     <th></th>
                     <th></th>
@@ -123,67 +117,157 @@
 
     <!-- Modals -->
 
-    <div class="modal fade" id="add-asset" tabindex="-1" style="display: none;" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+    <!-- Asset Details Modal -->
+    <div class="modal fade" id="asset-details-modal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
             <div class="modal-content">
                 <div class="modal-header">
-                <h1 class="modal-title fs-5" id="exampleModalToggleLabel">Create New Asset</h1>
+                    <h5 class="modal-title">Asset Details: <span id="modal-isi-number"></span></h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <form action="/save-asset" method="post">
-                        <div class="form-floating mb-3">
-                            <input type="hidden" name="isi_number" id="isi_number">
+                    <form action="/update-asset" method="post" enctype="multipart/form-data" id="update-asset-form">
+                        <input type="hidden" name="isi_number" id="hidden-isi-number">
+                        <div class="row">
+                            <div class="col">
+                                <div class="form-floating mb-3">
+                                    <input type="text" class="form-control" id="device-type" name="deviceType">
+                                    <label for="deviceType">Device Type:</label>
+                                </div>
+                                <div class="form-floating mb-3">
+                                    <input type="text" class="form-control" id="make-model" name="makeModel">
+                                    <label for="makeModel">Make/Model:</label>
+                                </div>
+                                <div class="form-floating mb-3">
+                                    <input type="text" class="form-control" id="serial-number" name="serialNumber">
+                                    <label for="serialNumber">Serial Numner:</label>
+                                </div>
+                                <div class="form-floating mb-3">
+                                    <input type="text" class="form-control" id="imei" name="imei">
+                                    <label for="imei">IMEI Number:</label>
+                                </div>
+                                <div class="form-floating mb-3">
+                                    <input type="text" class="form-control" id="mac-address" name="macAddress">
+                                    <label for="macAddress">MAC Address:</label>
+                                </div>
+                                <div class="form-floating mb-3">
+                                    <input type="text" class="form-control" id="allocated-user" name="allocatedUser">
+                                    <label for="allocatedUser">Assigned To:</label>
+                                </div>
+                                <div class="form-floating mb-3">
+                                    <input type="text" class="form-control" id="date-stamp" name="dateStamp" readonly>
+                                    <label for="dateStamp">Asset Creation Date:</label>
+                                </div>
+                            </div>
                         </div>
-                        <div class="form-floating mb-3">
-                            <input type="text" name="device_type" class="form-control" id="device_type" required>
-                            <label for="device_type" class="form-label">Device Type:</label>
-                        </div>
-                        <div class="form-floating mb-3">
-                            <input type="text" class="form-control" name="make_model" id="make_model" required>
-                            <label for="make_model" class="form-label">Make/Model:</label>
-                        </div>
-                        <div class="form-floating mb-3">
-                            <input type="text" class="form-control" name="serial_number" id="serial_number">
-                            <label for="serial_number" class="form-label">Serial Number:</label>
-                        </div>
-                        <div class="form-floating mb-3">
-                            <input type="text" class="form-control" name="imei" id="imei" required>
-                            <label for="imei" class="form-label">IMEI Number:</label>
-                        </div>
-                        <div class="form-floating mb-3">
-                            <input type="text" class="form-control" name="mac_address" id="mac_address" required>
-                            <label for="mac_address" class="form-label">MAC Address:</label>
-                        </div>
-                        <div class="form-floating mb-3">
-                            <input type="text" class="form-control" name="allocated_user" id="allocated_user" required>
-                            <label for="allocated_user" class="form-label">Allocated User:</label>
-                        </div>
-                        <button type="submit" class="btn btn-primary" value="Add Asset">Submit</button>
                     </form>
                 </div>
                 <div class="modal-footer">
-                    <button class="btn btn-outline-success" data-bs-target="#uploadclientscsv" data-bs-toggle="modal">Upload Client CSV</button>
+                    <button type="button" class="btn btn-primary" id="submit-update-asset-form">Submit</button>
                 </div>
             </div>
         </div>
     </div>
 
-<button type="button" id="btnSwitch" class="btn btn-secondary" style="position: fixed; bottom: 5px; right: 5px;">Toggle Theme</button>
+    <!-- Add Asset Modal -->
+    <div class="modal fade" id="add-asset" tabindex="-1" style="display: none;" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="exampleModalToggleLabel">Create New Asset</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form action="/save-asset" method="post">
+                        <!-- ... (form fields for adding asset) ... -->
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-outline-success" data-bs-target="#uploadclientscsv" data-bs-toggle="modal">Upload Asset CSV</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button type="button" id="btnSwitch" class="btn btn-secondary" style="position: fixed; bottom: 5px; right: 5px;">Toggle Theme</button>
 </body>
+
 <script>
-  document.addEventListener("DOMContentLoaded", function() {
-      $('#assets-table').DataTable();
+    $(document).ready(function () {
+        // Initialize DataTables on your assets table
+        $('#assets-table').DataTable({
+            searching: true,
+            paging: true
+            // Additional DataTable options can be added here
+        });
 
-  });
+        // Handle click on table rows for assets
+        $('#assets-table tbody').on('click', '.clickable-row', function () {
+            var isiNumber = $(this).data('isi-number');
+            var deviceType = $(this).data('device-type');
+            var makeModel = $(this).data('make-model');
+            var serialNumber = $(this).data('serial-number');
+            var imei = $(this).data('imei');
+            var macAddress = $(this).data('mac-address');
+            var allocatedUser = $(this).data('allocated-user');
+            var dateStamp = $(this).data('date-stamp');
 
-  document.getElementById('btnSwitch').addEventListener('click',()=>{
-      if (document.documentElement.getAttribute('data-bs-theme') == 'dark') {
-          document.documentElement.setAttribute('data-bs-theme','light')
-      }
-      else {
-          document.documentElement.setAttribute('data-bs-theme','dark')
-      }
-  })
+            // Populate the modal with the data
+            $('#hidden-isi-number').val(isiNumber);
+            $('#modal-isi-number').text(isiNumber);
+            $('#device-type').val(deviceType);
+            $('#make-model').val(makeModel);
+            $('#serial-number').val(serialNumber);
+            $('#imei').val(imei);
+            $('#mac-address').val(macAddress);
+            $('#allocated-user').val(allocatedUser);
+            $('#date-stamp').val(dateStamp);
+
+            // Show the modal
+            $('#asset-details-modal').modal('show');
+        });
+
+        $('#submit-update-asset-form').click(function () {
+            // Get the form data
+            var formData = {
+                isiNumber: $('#hidden-isi-number').val(),
+                deviceType: $('#device-type').val(),
+                makeModel: $('#make-model').val(),
+                serialNumber: $('#serial-number').val(),
+                imei: $('#imei').val(),
+                macAddress: $('#mac-address').val(),
+                allocatedUser: $('#allocated-user').val(),
+            };
+
+            // Submit the form data to the server
+            $.ajax({
+                type: 'POST',
+                url: '/update-asset',
+                contentType: 'application/json;charset=UTF-8',
+                data: JSON.stringify(formData),
+                success: function (response) {
+                    console.log('Asset update successful:', response);
+                    location.reload(true);
+                    // Handle success as needed
+                },
+                error: function (xhr, textStatus, errorThrown) {
+                    console.error('Error submitting data:', xhr);
+                    // Handle error - log details for debugging
+                }
+            });
+        });
+
+
+                // Toggle Theme Button Functionality
+                $('#btnSwitch').on('click', function () {
+                    var currentTheme = $('html').attr('data-bs-theme');
+                    var newTheme = currentTheme === 'light' ? 'dark' : 'light';
+                    $('html').attr('data-bs-theme', newTheme);
+                });
+
+                // ... (other existing code) ...
+            });
 </script>
+
+
 </html>

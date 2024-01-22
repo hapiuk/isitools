@@ -149,34 +149,21 @@ def assettracker():
     conn.close()
     return render_template('assettracker.html', assets=assets, success_message=success_message, error_message=error_message)
 
-@app.route('/get-asset-details/<isi_number>', methods=['GET'])
-def get_asset_details(isi_number):
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute('SELECT * FROM assets WHERE isi_number = ?', (isi_number,))
-    asset_details = cursor.fetchone()
-    conn.close()
-
-    if asset_details:
-        asset_details_dict = dict(asset_details)
-        app.logger.info(f'Asset details found: {asset_details_dict}')
-        return jsonify(asset_details_dict)
-    else:
-        app.logger.warning('Asset details not found.')
-        return jsonify({'error': 'Asset details not found'}), 404
-
 @app.route('/update-asset', methods=['POST'])
 def update_asset():
     if request.method == 'POST':
         try:
-            # Get data from the form
-            isi_number = request.form['isi_number']
-            device_type = request.form['device_type']
-            make_model = request.form['make_model']
-            serial_number = request.form['serial_number']
-            imei = request.form['imei']
-            mac_address = request.form['mac_address']
-            allocated_user = request.form['allocated_user']
+            # Get JSON data from the request
+            data = request.get_json()
+
+            # Extract data from the JSON object
+            isi_number = data.get('isiNumber')
+            device_type = data.get('deviceType')
+            make_model = data.get('makeModel')
+            serial_number = data.get('serialNumber')
+            imei = data.get('imei')
+            mac_address = data.get('macAddress')
+            allocated_user = data.get('allocatedUser')
 
             # Update the asset data in the database
             conn = get_db()
@@ -188,14 +175,11 @@ def update_asset():
             conn.commit()
             conn.close()
 
-            success_message = "Asset updated successfully."
-            session['success_message'] = success_message
+            return jsonify({'message': 'Asset updated successfully'}), 200
         except Exception as e:
-            error_message = str(e)
-            session['error_message'] = error_message
+            return jsonify({'error': str(e), 'message': 'error'}), 500
 
-    return redirect('/assettracker')
-
+    return jsonify({'error': 'Invalid request method', 'message': 'error'}), 400
 
 @app.route('/upload')
 def page1():
