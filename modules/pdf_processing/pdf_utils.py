@@ -108,7 +108,7 @@ def extract_additional_information(text, business_entity, date_str):
         "External Inspection Ref No": f"{business_entity}-PWR-{date_str}-{job_no.group(1) if job_no else ''}",
         "Inspection Date": f"{date_obj.strftime('%d/%m/%Y')}",
         "Contractor": "ISI",
-        "Document": f"{business_entity}.-PWR-{date_str}.pdf",
+        "Document": f"{business_entity}-PWR-{date_str}.pdf",
         "Remedial Works": "Yes",
         "Risk Rating": "",
         "Comments": "",
