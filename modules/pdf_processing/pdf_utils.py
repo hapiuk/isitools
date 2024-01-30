@@ -105,7 +105,7 @@ def extract_additional_information(text, business_entity, date_str):
 
     additional_info = {
         "Compliance or Asset Ref No": f"{business_entity}PWR",
-        "External Inspection Ref No": f"{business_entity}.-PWR-{date_str}-{job_no.group(1) if job_no else ''}",
+        "External Inspection Ref No": f"{business_entity}-PWR-{date_str}-{job_no.group(1) if job_no else ''}",
         "Inspection Date": f"{date_obj.strftime('%d/%m/%Y')}",
         "Contractor": "ISI",
         "Document": f"{business_entity}.-PWR-{date_str}.pdf",
