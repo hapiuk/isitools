@@ -201,6 +201,21 @@ def add_asset():
 
     return redirect(url_for('assettracker', success=success_message, error=error_message))
 
+@app.route('/delete-asset', methods=['POST'])
+def delete_asset():
+    isi_number = request.form.get('isi_number')
+    conn = get_db()
+    try:
+        conn.execute('DELETE FROM assets WHERE isi_number = ?', (isi_number,))
+        conn.commit()
+        success_message = "Asset successfully deleted."
+        error_message = ""
+    except Exception as e:
+        success_message = ""
+        error_message = f"Error deleting asset: {e}"
+    finally:
+        conn.close()
+    return redirect(url_for('assettracker', success=success_message, error=error_message))
 
 
 if __name__ == "__main__":
