@@ -217,6 +217,35 @@ def delete_asset():
         conn.close()
     return redirect(url_for('assettracker', success=success_message, error=error_message))
 
+@app.route('/update-asset', methods=['POST'])
+def update_asset():
+    data = request.get_json()
+    isi_number = data.get('isiNumber')
+    device_type = data.get('deviceType')
+    make_model = data.get('makeModel')
+    serial_number = data.get('serialNumber')
+    imei = data.get('imei')
+    mac_address = data.get('macAddress')
+    allocated_user = data.get('allocatedUser')
+
+    # Add your database update logic here.
+    # For example:
+    conn = get_db()
+    try:
+        conn.execute('''
+            UPDATE assets
+            SET device_type = ?, make_model = ?, serial_number = ?, imei = ?, mac_address = ?, allocated_user = ?
+            WHERE isi_number = ?
+        ''', (device_type, make_model, serial_number, imei, mac_address, allocated_user, isi_number))
+        conn.commit()
+        return jsonify({'message': 'Asset updated successfully'}), 200
+    except Exception as e:
+        conn.rollback()
+        return jsonify({'error': str(e)}), 500
+    finally:
+        conn.close()
+
+
 
 if __name__ == "__main__":
     import socket

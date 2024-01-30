@@ -246,7 +246,6 @@
         });
 
         $('#submit-update-asset-form').click(function () {
-            // Get the form data
             var formData = {
                 isiNumber: $('#hidden-isi-number').val(),
                 deviceType: $('#device-type').val(),
@@ -257,7 +256,6 @@
                 allocatedUser: $('#allocated-user').val(),
             };
 
-            // Submit the form data to the server
             $.ajax({
                 type: 'POST',
                 url: '/update-asset',
@@ -266,15 +264,12 @@
                 success: function (response) {
                     console.log('Asset update successful:', response);
                     location.reload(true);
-                    // Handle success as needed
                 },
                 error: function (xhr, textStatus, errorThrown) {
                     console.error('Error submitting data:', xhr);
-                    // Handle error - log details for debugging
                 }
             });
         });
-
 
         // Toggle Theme Button Functionality
         $('#btnSwitch').on('click', function () {
