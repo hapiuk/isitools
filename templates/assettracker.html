@@ -171,7 +171,7 @@
     </div>
 
     <!-- Add Asset Modal -->
-    <div class="modal fade" id="add-asset" tabindex="-1" style="display: none;" aria-hidden="true">
+    <div class="modal fade" id="add-asset" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content">
                 <div class="modal-header">
@@ -179,16 +179,32 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <form action="/save-asset" method="post">
-                        <!-- ... (form fields for adding asset) ... -->
+                    <form id="add-asset-form" action="/add-asset" method="post">
+                        <div class="mb-3">
+                            <input type="text" class="form-control" id="new-device-type" name="deviceType" placeholder="Device Type" required>
+                        </div>
+                        <div class="mb-3">
+                            <input type="text" class="form-control" id="new-make-model" name="makeModel" placeholder="Make/Model" required>
+                        </div>
+                        <div class="mb-3">
+                            <input type="text" class="form-control" id="new-serial-number" name="serialNumber" placeholder="Serial Number" required>
+                        </div>
+                        <div class="mb-3">
+                            <input type="text" class="form-control" id="new-imei" name="imei" placeholder="IMEI Number">
+                        </div>
+                        <div class="mb-3">
+                            <input type="text" class="form-control" id="new-mac-address" name="macAddress" placeholder="MAC Address">
+                        </div>
+                        <div class="mb-3">
+                            <input type="text" class="form-control" id="new-allocated-user" name="allocatedUser" placeholder="Allocated User">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Save Asset</button>
                     </form>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn btn-outline-success" data-bs-target="#uploadclientscsv" data-bs-toggle="modal">Upload Asset CSV</button>
                 </div>
             </div>
         </div>
     </div>
+
 
     <button type="button" id="btnSwitch" class="btn btn-secondary" style="position: fixed; bottom: 5px; right: 5px;">Toggle Theme</button>
 </body>

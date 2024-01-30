@@ -1,10 +1,11 @@
-from flask import Flask, render_template, request, send_from_directory, jsonify, flash, redirect, send_file
+from flask import Flask, render_template, request, send_from_directory, jsonify, flash, redirect, send_file, url_for
 from werkzeug.utils import secure_filename
 from datetime import datetime
 import os
 import shutil
 import zipfile
 import sqlite3
+import random
 
 
 # Import configurations and pdf processing functions
@@ -169,6 +170,37 @@ def assettracker():
 
     conn.close()
     return render_template('assettracker.html', assets=assets, success_message=success_message, error_message=error_message)
+
+@app.route('/add-asset', methods=['POST'])
+def add_asset():
+    device_type = request.form.get('deviceType')
+    make_model = request.form.get('makeModel')
+    serial_number = request.form.get('serialNumber')
+    imei = request.form.get('imei')
+    mac_address = request.form.get('macAddress')
+    allocated_user = request.form.get('allocatedUser')
+
+    # Generate a unique ISI number and current timestamp
+    isi_number = f"ISI-{random.randint(1000, 9999)}-{int(datetime.now().timestamp())}"
+    current_timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+    conn = get_db()
+    try:
+        conn.execute('''
+            INSERT INTO assets (isi_number, device_type, make_model, serial_number, imei, mac_address, allocated_user, date_stamp)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (isi_number, device_type, make_model, serial_number, imei, mac_address, allocated_user, current_timestamp))
+        conn.commit()
+        success_message = "Asset successfully added."
+        error_message = ""  # No error occurred
+    except Exception as e:
+        success_message = ""
+        error_message = f"Error adding asset: {e}"  # Set error message
+    finally:
+        conn.close()
+
+    return redirect(url_for('assettracker', success=success_message, error=error_message))
+
 
 
 if __name__ == "__main__":
