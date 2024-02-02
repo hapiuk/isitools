@@ -10,6 +10,7 @@
     <script type="text/javascript" language="javascript" src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.min.js" integrity="sha384-BBtl+eGJRgqQAUMxJ7pMwbEyER4l1g+O15P+16Ep7Q9Q+zqX6gSbd85u4mG4QzX+" crossorigin="anonymous"></script>
     <script type="text/javascript" language="javascript" src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
     <script type="text/javascript" language="javascript" src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/resumable.js/1.1.0/resumable.min.js"></script>
   </head>
   <body>
     <nav class="navbar bg-body-tertiary fixed-top" style="background-color: #1D71BE;">
@@ -71,14 +72,14 @@
     </div>
 
     <div class="container-fluid">
-        <h2>LOLER Inspection Reports</h2>
-        <table id="loler-table" class="table table-striped table-hover" style="cursor: pointer;">
+        <table class="table table-striped table-hover" style="cursor: pointer;" id="loler-table">
             <thead>
                 <tr>
                     <th>Client Name</th>
                     <th>Report Date</th>
                     <th>Next Inspection Date</th>
                     <th>Report Count</th>
+                    <th></th>
                 </tr>
             </thead>
             <tbody>
@@ -88,17 +89,34 @@
                     <td>{{ inspection.report_date }}</td>
                     <td>{{ inspection.next_inspection_date }}</td>
                     <td>{{ inspection.report_count }}</td>
+                    <td>
+                      <!-- Download Button -->
+                      <a href="" class="btn btn-primary btn-sm">Download</a>
+                      <!-- Delete Button -->
+                      <form action="" method="post" style="display:inline;">
+                          <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure?');">Delete</button>
+                      </form>
+                  </td>
                 </tr>
                 {% endfor %}
             </tbody>
+            <tfoot>
+                <tr>
+                    <th>
+                        <button type="button" data-bs-toggle="modal" data-bs-target="#process-report" class="btn btn-primary">Process Report</button>
+                    </th>
+                    <th></th>
+                    <th></th>
+                    <th></th>
+                    <th></th>
+                </tr>
+            </tfoot>
         </table>
     </div>
 
-    <button type="button" data-bs-toggle="modal" data-bs-target="#process-report" class="btn btn-primary">Process Report</button>
-
     <!-- Modals -->
 
-  <div class="modal fade" id="process-report" tabindex="-1" style="display: none;" aria-hidden="true">
+  <div class="modal fade" id="process-report" data-bs-backdrop="static" tabindex="-1" aria-hidden="true">
       <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
           <div class="modal-content">
               <div class="modal-header">
@@ -106,41 +124,88 @@
                   <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
               </div>
               <div class="modal-body">
-                  <form action="/loler-reports" method="post" enctype="multipart/form-data">
                       <div class="input-group mb-3">
-                          <input type="file" name="files[]" class="form-control" id="inputGroupFile01" multiple required>
+                          <div class="btn-group" role="group" aria-label="Basic mixed styles example" style="width:100%;">
+                            <button type="file" class="btn btn-secondary" id="resumable_input" style="width:60%;" multiple required>Browse Files:</button>
+                            <button type="button" class="btn btn-secondary" id="file-count-display" disabled>No files selected</button>
+                          </div>
                       </div>
                       <div class="form-floating mb-3">
                           <input class="form-control" type="text" id="client_name" name="client_name" required>
                           <label for="client_name" class="form-label">Client Name:</label>
                       </div>
-                      <div class="mb-3">
-                          <input type="submit" class="btn btn-primary" style="width:100%;" value="Process">
-                      </div>
-                      <div class="mb-3">
-                          <progress class="progress" id="progress-bar" style="width:100%;" value="0" max="100"></progress>
-                          <div id="status"></div>
-                      </div>
-                  </form>
+                      <button type="button" id="start-upload" class="btn btn-primary" style="width:100%;">Process</button>
               </div>
               <div class="modal-footer">
-                  Hello
               </div>
           </div>
       </div>
   </div>
 
 
-<button type="button" id="btnSwitch" class="btn btn-secondary" style="position: fixed; bottom: 5px; right: 5px;">Toggle Theme</button>
+
+  <button type="button" id="btnSwitch" class="btn btn-secondary" style="position: fixed; bottom: 5px; right: 5px;">Toggle Theme</button>
 </body>
-    <script type="text/javascript"> 
-        $(document).ready(function () {
-            // Initialize DataTables on the loler table
-            $('#loler-table').DataTable({
-                searching: true,
-                paging: true
-                // Additional DataTable options can be added here
-            });
+<script type="text/javascript">
+$(document).ready(function () {
+    $('#loler-table').DataTable({
+        searching: true,
+        paging: true
+    });
+
+    var r = new Resumable({
+        target: '/upload_chunk',
+        query: {upload_token: 'unique_upload_token'}, // Adjust as needed
+        fileType: ['pdf'],
+        maxFileSize: 500*1024*1024, // Adjust according to your needs
+        chunkSize: 250*1024*1024, // Adjust chunk size, if necessary
+        testChunks: false,
+        throttleProgressCallbacks: 1,
+    });
+
+    r.assignBrowse(document.getElementById('resumable_input'));
+
+    r.on('fileAdded', function(file, event) {
+        var fileCount = r.files.length;
+        $('#file-count-display').text(fileCount + " file(s) selected");
+    });
+
+    $('#start-upload').click(function(){
+        var clientName = $('#client_name').val(); // Capture client name when the process starts
+        if(clientName) {
+            r.opts.query.client_name = clientName; // Include client name in query
+            r.upload();
+        } else {
+            alert('Client name is required.');
+        }
+    });
+
+    r.on('complete', function(){
+        // All files have been uploaded
+        console.log("All files have been uploaded successfully.");
+        var clientName = $('#client_name').val();
+        startProcessing(clientName); // Call startProcessing function after all files are uploaded
+    });
+
+    function startProcessing(clientName) {
+        $.ajax({
+            url: '/start_processing',
+            type: 'POST',
+            // Use jQuery to serialize the data or manually create the data object
+            data: { client_name: clientName }, // Make sure this matches your input field's ID and server-side expectation
+            success: function(response) {
+                console.log(response.message);
+                if(response.status === 'success') {
+                    window.location.href = response.download_url;
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error("Processing error:", error);
+                // Handle error
+            }
         });
-    </script>
+    }
+});
+</script>
+
 </html>

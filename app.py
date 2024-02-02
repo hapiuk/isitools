@@ -6,14 +6,17 @@ import shutil
 import zipfile
 import sqlite3
 import random
-
-
-# Import configurations and pdf processing functions
 from modules.config import Config
 from modules.pdf_processing.pdf_utils import process_puwer_documents, process_loler_pdfs, allowed_file, clear_input_folder
 
 app = Flask(__name__)
+app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024
 app.config.from_object(Config)
+
+
+@app.errorhandler(413)
+def request_entity_too_large(error):
+    return 'File Too Large', 413
 
 # Database helper functions
 def get_db():
@@ -24,6 +27,7 @@ def get_db():
 @app.route('/')
 def index():
     return render_template('index.html')
+
 
 @app.route('/aecom', methods=['GET', 'POST'])
 def aecom():
@@ -99,37 +103,29 @@ def aecom():
     return render_template('aecom.html', aecom_reports=aecom_reports)
 
 
+def get_report_by_id(report_id):
+    conn = get_db()
+    report = conn.execute('SELECT * FROM loler_inspections WHERE id = ?', (report_id,)).fetchone()
+    conn.close()
+    if report:
+        return dict(report)
+    else:
+        return None
+
 @app.route('/loler-reports', methods=['GET', 'POST'])
 def loler_reports():
     if request.method == 'POST':
-        clear_input_folder(app.config['UPLOAD_FOLDER'])
-
-        files = request.files.getlist('files[]')
-        for file in files:
-            if file and allowed_file(file.filename, app.config['ALLOWED_EXTENSIONS']):
-                filename = secure_filename(file.filename)
-                file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-                print(f"{filename} uploaded successfully.")
-            else:
-                print("Invalid file type.")
-
         client_name = request.form.get('client_name')
         if not client_name:
             print("Client name is required.")
             return redirect(request.url)
-
-        # Pass get_db as an argument to process_loler_pdfs
-        csv_file_path = process_loler_pdfs(app.config['UPLOAD_FOLDER'], app.config['OUTPUT_FOLDER'], client_name, get_db)
-        print(f"CSV File Path: {csv_file_path}")
-        if csv_file_path:
-            return send_file(csv_file_path, as_attachment=True)
-        else:
-            print("Error occurred in processing files.")
-            return redirect(request.url)
+        
+        # Return a response indicating the start of the file upload process
+        return jsonify({'status': 'upload_started', 'message': 'File upload started', 'client_name': client_name})
 
     # Fetch the LOLER inspections from the database
     conn = get_db()
-
+    
     conn.execute('''
         CREATE TABLE IF NOT EXISTS loler_inspections (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -145,6 +141,65 @@ def loler_reports():
 
     return render_template('loler-reports.html', loler_inspections=loler_inspections)
 
+@app.route('/upload_chunk', methods=['POST'])
+def upload_chunk():
+    # Example of capturing client name, adjust based on your actual data passing mechanism
+    client_name = request.args.get('client_name', 'default_client')
+    
+    chunk_number = request.form['resumableChunkNumber']
+    total_chunks = request.form['resumableTotalChunks']
+    file = request.files['file']
+    filename = secure_filename(request.form['resumableFilename'])
+    chunk_save_path = os.path.join('temp_chunks', f"{filename}.part{chunk_number}")
+    file.save(chunk_save_path)
+
+    if all(os.path.exists(os.path.join('temp_chunks', f"{filename}.part{i}")) for i in range(1, int(total_chunks) + 1)):
+        # Reassemble the file
+        reassembled_file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        with open(reassembled_file_path, 'wb') as outfile:
+            for i in range(1, int(total_chunks) + 1):
+                chunk_file_path = os.path.join('temp_chunks', f"{filename}.part{i}")
+                with open(chunk_file_path, 'rb') as chunk_file:
+                    outfile.write(chunk_file.read())
+                os.remove(chunk_file_path)  # Clean up after reassembly
+
+        # Assuming your processing function can handle directly the reassembled file path
+        # and you adjust it to accept and handle the client_name
+        try:
+            return jsonify({'status': 'success', 'message': 'File uploaded'})
+        except Exception as e:
+            return jsonify({'status': 'error', 'message': str(e)})
+    else:
+        return jsonify({'status': 'in_progress', 'message': 'Chunk received'})
+
+@app.route('/start_processing', methods=['POST'])
+def start_processing():
+    client_name = request.form['client_name']
+    try:
+        # Adjust this line based on the actual return values of process_loler_pdfs
+        # Assuming it returns csv_file_path, faulty_reports_path, and perhaps more
+        csv_file_path, faulty_reports_path, *_ = process_loler_pdfs(app.config['UPLOAD_FOLDER'], app.config['OUTPUT_FOLDER'], client_name, get_db)
+        
+        # Clear the input folder after processing is complete
+        clear_input_folder(app.config['UPLOAD_FOLDER'])
+        
+        # Extract filename from the path for the download URL
+        filename = os.path.basename(csv_file_path)
+        
+        # Adjust the 'download_file' route name if necessary to match your actual download route
+        download_url = url_for('download_file', filename=filename, _external=True)
+        
+        # Return success response with download URL
+        return jsonify({'status': 'success', 'download_url': download_url})
+    except Exception as e:
+        # If an error occurs, clear the input folder before returning the error
+        clear_input_folder(app.config['UPLOAD_FOLDER'])
+        return jsonify({'status': 'error', 'message': str(e)})
+
+@app.route('/download_file/<filename>')
+def download_file(filename):
+    # Ensure the path is safe and the file exists
+    return send_from_directory(app.config['OUTPUT_FOLDER'], filename, as_attachment=True)
 
 @app.route('/assettracker')
 def assettracker():
