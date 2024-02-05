@@ -1,75 +1,4 @@
-<!doctype html>
-<html lang="en" data-bs-theme="dark">
-  <head>
-    <title>Industrial Safety Inspections - AECOM</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.0/css/bootstrap.min.css">
-    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
-    <script type="text/javascript" language="javascript" src="https://code.jquery.com/jquery-3.7.0.js"></script>
-    <script type="text/javascript" language="javascript" src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous"></script>
-    <script type="text/javascript" language="javascript" src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.min.js" integrity="sha384-BBtl+eGJRgqQAUMxJ7pMwbEyER4l1g+O15P+16Ep7Q9Q+zqX6gSbd85u4mG4QzX+" crossorigin="anonymous"></script>
-    <script type="text/javascript" language="javascript" src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
-    <script type="text/javascript" language="javascript" src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
-  </head>
-  <body>
-    <nav class="navbar bg-body-tertiary fixed-top" style="background-color: #1D71BE;">
-      <div class="container-fluid">
-        <a class="navbar-brand" href="#">Industrial Safety Inspections - AECOM</a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar" aria-label="Toggle navigation">
-          <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
-          <div class="offcanvas-header">
-            <h5 class="offcanvas-title" id="offcanvasNavbarLabel">Menu</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-          </div>
-          <div class="offcanvas-body">
-            <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
-              <li class="nav-item">
-                <a class="nav-link active" aria-current="page" href="/">Home</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="/assettracker">Asset Tracking</a>
-              </li>
-              <li class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                  Client Reporting
-                </a>
-                <ul class="dropdown-menu">
-                  <li><a class="dropdown-item" href="/aecom">AECOM - Royal Mail</a></li>
-                  <li>
-                    <hr class="dropdown-divider">
-                  </li>
-                  <li><a class="dropdown-item" href="/loler-reports">LOLER Reporting</a></li>
-                  <li><a class="dropdown-item" href="#">Bespoke Report Request</a></li>
-                </ul>
-              </li>
-              <li class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                  Training Materials
-                </a>
-                <ul class="dropdown-menu">
-                  <li><a class="dropdown-item" href="/quiz">Engineer Training - LOLER</a></li>
-                  <li><a class="dropdown-item" href="/leaderboard">Engineer Training - LOLER</a></li>
-                  <li>
-                    <hr class="dropdown-divider">
-                  </li>
-                  <li><a class="dropdown-item" href="/leaderboard">Leaderboards</a></li>
-                </ul>
-              </li>
-            </ul>
-            <form class="d-flex mt-3" role="search">
-              <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search">
-              <button class="btn btn-outline-success" type="submit">Search</button>
-            </form>
-          </div>
-        </div>
-      </div>
-    </nav>
-    <div class="container" style="padding: 1.5%;">
-        .
-    </div>
-
+{% include 'header.html' %}
     <!-- Clients Page Contents-->
     <div class="container-fluid">
         <table class="table table-striped table-hover" style="cursor: pointer;" id="aecom-table">
@@ -79,6 +8,7 @@
                   <th>Inspection Date</th>
                   <th>Document Name</th>
                   <th>Business Entity</th>
+                  <th></th>
               </tr>
             </thead>
             <!-- Display inspections from the database -->
@@ -88,6 +18,10 @@
                   <td>{{ report.inspection_date }}</td>
                   <td>{{ report.document_name }}</td>
                   <td>{{ report.business_entity }}</td>
+                  <td>
+                    <a href="/download_file/{{ OUTPUT_FOLDER }}/{{ report.zipname }}" class="btn btn-primary btn-sm">Download</a>
+                    <button type="button" class="btn btn-danger btn-sm delete-record-button" data-id="{{ report.id }}">Delete Record</button>
+                  </td>
               </tr>
               {% endfor %}
               <tfoot>
@@ -95,6 +29,7 @@
                     <th>
                       <button type="button" data-bs-toggle="modal" data-bs-target="#process-report" class="btn btn-primary">Process Report</button>
                     </th>
+                    <th></th>
                     <th></th>
                     <th></th>
                     <th></th>
@@ -137,15 +72,51 @@
         </div>
     </div>
 
-<button type="button" id="btnSwitch" class="btn btn-secondary" style="position: fixed; bottom: 5px; right: 5px;">Toggle Theme</button>
+  <button type="button" id="btnSwitch" class="btn btn-secondary" style="position: fixed; bottom: 5px; left: 5px;">Toggle Theme</button>
 </body>
   <script type="text/javascript"> 
-    $(document).ready(function () {
+  $(document).ready(function () {
       $('#aecom-table').DataTable({
           searching: true,
           paging: true
           // Additional DataTable options can be added here
       });
-    });
+
+      $('.delete-record-button').click(function () {
+          var id = $(this).data('id'); // Get the id value from the data-id attribute
+          if (confirm('Are you sure you want to delete this record?')) {
+              $.ajax({
+                  type: 'POST',
+                  url: '/delete-record-aecom',
+                  data: { id: id },
+                  success: function (response) {
+                      console.log('Record deleted successfully:', response);
+                      location.reload(true); // Reload the page to update the table
+                  },
+                  error: function (xhr, textStatus, errorThrown) {
+                      console.error('Error deleting asset:', xhr);
+                  }
+              });
+          }
+      });
+  });
+
+  function toggleTheme() {
+    var currentTheme = document.documentElement.getAttribute('data-bs-theme');
+    var newTheme = currentTheme === 'light' ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-bs-theme', newTheme);
+    localStorage.setItem('theme', newTheme); // Save theme preference
+  }
+
+  // Event listener for the toggle button
+  document.getElementById('btnSwitch').addEventListener('click', toggleTheme);
+
+  // Apply saved theme on page load
+  document.addEventListener('DOMContentLoaded', () => {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme) {
+      document.documentElement.setAttribute('data-bs-theme', savedTheme);
+    }
+  });
   </script>
 </html>

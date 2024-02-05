@@ -108,7 +108,7 @@ def extract_additional_information(text, business_entity, date_str):
         "External Inspection Ref No": f"{business_entity}-PWR-{date_str}-{job_no.group(1) if job_no else ''}",
         "Inspection Date": f"{date_obj.strftime('%d/%m/%Y')}",
         "Contractor": "ISI",
-        "Document": f"{business_entity}.-PWR-{date_str}.pdf",
+        "Document": f"{business_entity}-PWR-{date_str}.pdf",
         "Remedial Works": "Yes",
         "Risk Rating": "",
         "Comments": "",
@@ -256,6 +256,7 @@ def db_insert_function(additional_info, get_db):
     inspection_date = additional_info["Inspection Date"]
     document_name = additional_info["Document"]
     business_entity = additional_info["Properties_Business Entity"]
+    zipname = f"{business_entity}_output.zip"
 
     # Database interaction
     conn = get_db()
@@ -267,19 +268,26 @@ def db_insert_function(additional_info, get_db):
             inspection_ref TEXT,
             inspection_date TEXT,
             document_name TEXT,
+            zipname TEXT,
             business_entity TEXT
         )
     ''')
 
     # Insert data into the table
     conn.execute('''
-        INSERT INTO aecom_reports (inspection_ref, inspection_date, document_name, business_entity) 
-        VALUES (?, ?, ?, ?)
-    ''', (inspection_ref, inspection_date, document_name, business_entity))
+        INSERT INTO aecom_reports (inspection_ref, inspection_date, document_name, zipname, business_entity) 
+        VALUES (?, ?, ?, ?, ?)
+    ''', (inspection_ref, inspection_date, document_name, zipname, business_entity))
     
     conn.commit()
     conn.close()
 
+
+# Generate a unique filename (from lolerextract.py)
+def generate_unique_filename(client_name):
+    timestamp = datetime.datetime.now().strftime("%Y%m%d-%H")
+    filename = f"{client_name}_{timestamp}.csv"
+    return filename
 
 def process_loler_pdfs(input_folder, output_folder, client_name, get_db):
     # Create the output directory if it doesn't exist
@@ -343,33 +351,24 @@ def process_loler_pdfs(input_folder, output_folder, client_name, get_db):
                             earliest_next_inspection_date = next_date
 
     # Insert data into the database
-    db_insert_loler_inspection(client_name, report_date, earliest_next_inspection_date, report_count, get_db)
+    db_insert_loler_inspection(client_name, report_date, earliest_next_inspection_date, report_count, unique_filename, get_db)
 
     return csv_output_file
 
-def db_insert_loler_inspection(client_name, report_date, next_inspection_date, report_count, get_db):
+def db_insert_loler_inspection(client_name, report_date, next_inspection_date, report_count, unique_filename, get_db):
     try:
         conn = get_db()
-        # Create the table if it doesn't exist
-        conn.execute('''
-            CREATE TABLE IF NOT EXISTS loler_inspections (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                client_name TEXT,
-                report_date TEXT,
-                next_inspection_date TEXT,
-                report_count INTEGER
-            )
-        ''')
 
         # Convert report_date and next_inspection_date to strings if they are datetime objects
         report_date_str = report_date.strftime('%Y-%m-%d') if isinstance(report_date, datetime.datetime) else report_date
         next_inspection_date_str = next_inspection_date.strftime('%Y-%m-%d') if isinstance(next_inspection_date, datetime.datetime) else next_inspection_date
+        file_name = unique_filename  # Assign unique_filename to file_name
 
         # Insert data into the table
         conn.execute('''
-            INSERT INTO loler_inspections (client_name, report_date, next_inspection_date, report_count) 
-            VALUES (?, ?, ?, ?)
-        ''', (client_name, report_date_str, next_inspection_date_str, report_count))
+            INSERT INTO loler_inspections (client_name, report_date, next_inspection_date, file_name, report_count) 
+            VALUES (?, ?, ?, ?, ?)
+        ''', (client_name, report_date_str, next_inspection_date_str, file_name, report_count))
         
         conn.commit()
     except Exception as e:
@@ -378,8 +377,3 @@ def db_insert_loler_inspection(client_name, report_date, next_inspection_date, r
         conn.close()
 
 
-# Generate a unique filename (from lolerextract.py)
-def generate_unique_filename(client_name):
-    timestamp = datetime.datetime.now().strftime("%Y%m%d-%H")
-    filename = f"{client_name}_{timestamp}.csv"
-    return filename

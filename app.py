@@ -26,7 +26,7 @@ def get_db():
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return render_template('index.html', title='Home')
 
 
 @app.route('/aecom', methods=['GET', 'POST'])
@@ -76,7 +76,9 @@ def aecom():
 
             shutil.rmtree(temp_folder)
             print("Files processed and zipped successfully.")
-            return send_from_directory(app.config['TEMP_DOWNLOAD_FOLDER'], zip_filename, as_attachment=True)
+
+            # Redirect to the 'aecom' page to refresh
+            return redirect(url_for('aecom'))
 
         except Exception as e:
             print(f"Error processing files: {str(e)}")
@@ -92,6 +94,7 @@ def aecom():
             inspection_ref TEXT,
             inspection_date TEXT,
             document_name TEXT,
+            zipname TEXT,
             business_entity TEXT
         )
     ''')
@@ -100,7 +103,7 @@ def aecom():
     conn.close()
 
     # Render the template with the fetched data
-    return render_template('aecom.html', aecom_reports=aecom_reports)
+    return render_template('aecom.html', aecom_reports=aecom_reports, title='AECOM Reports')
 
 
 def get_report_by_id(report_id):
@@ -132,6 +135,7 @@ def loler_reports():
             client_name TEXT,
             report_date TEXT,
             next_inspection_date TEXT,
+            file_name TEXT,
             report_count INTEGER
         )
     ''')
@@ -139,7 +143,7 @@ def loler_reports():
     loler_inspections = conn.execute('SELECT * FROM loler_inspections').fetchall()
     conn.close()
 
-    return render_template('loler-reports.html', loler_inspections=loler_inspections)
+    return render_template('loler-reports.html', loler_inspections=loler_inspections, title='LOLER Reports')
 
 @app.route('/upload_chunk', methods=['POST'])
 def upload_chunk():
@@ -199,6 +203,35 @@ def start_processing():
         clear_input_folder(app.config['UPLOAD_FOLDER'])
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
+@app.route('/delete-record-loler', methods=['POST'])
+def delete_record_loler():
+    loler_report_id = request.form.get('id')
+    conn = get_db()
+    try:
+        # Get the file name associated with the record
+        cursor = conn.execute('SELECT file_name FROM loler_inspections WHERE id = ?', (loler_report_id,))
+        result = cursor.fetchone()
+        
+        if result:
+            file_name = result['file_name']
+
+            # Delete the file associated with the record
+            file_path = os.path.join(app.config['OUTPUT_FOLDER'], file_name)
+            if os.path.exists(file_path):
+                os.remove(file_path)
+
+        # Delete the record from the database
+        conn.execute('DELETE FROM loler_inspections WHERE id = ?', (loler_report_id,))
+        conn.commit()
+        success_message = "Record successfully deleted."
+        error_message = ""
+    except Exception as e:
+        success_message = ""
+        error_message = f"Error deleting Record: {e}"
+    finally:
+        conn.close()
+    return redirect(url_for('loler_reports', success=success_message, error=error_message))
+
 
 @app.route('/download_file/<filename>')
 def download_file(filename):
@@ -212,7 +245,23 @@ def assettracker():
     error_message = request.args.get('error', '')
 
     conn = get_db()
-    
+
+    try:
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS assets (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                isi_number TEXT,
+                device_type TEXT,
+                make_model TEXT,
+                serial_number TEXT,
+                imei TEXT,
+                mac_address TEXT,
+                allocated_user TEXT,
+                date_stamp TEXT
+            )
+        ''')
+    except sqlite3.Error as e:
+        print(f"SQLite error: {e}")
     # Implement filtering based on the search query
     if search_query:
         assets = conn.execute('''
@@ -228,7 +277,7 @@ def assettracker():
         ''',).fetchall()
 
     conn.close()
-    return render_template('assettracker.html', assets=assets, success_message=success_message, error_message=error_message)
+    return render_template('assettracker.html', assets=assets, success_message=success_message, error_message=error_message, title='ISI Assets')
 
 @app.route('/add-asset', methods=['POST'])
 def add_asset():
@@ -275,6 +324,36 @@ def delete_asset():
     finally:
         conn.close()
     return redirect(url_for('assettracker', success=success_message, error=error_message))
+
+@app.route('/delete-record-aecom', methods=['POST'])
+def delete_record_aecom():
+    aecom_report_id = request.form.get('id')
+    conn = get_db()
+    try:
+        # Get the file name associated with the record
+        cursor = conn.execute('SELECT zipname FROM aecom_reports WHERE id = ?', (aecom_report_id,))
+        result = cursor.fetchone()
+        
+        if result:
+            file_name = result['zipname']
+
+            # Delete the file associated with the record
+            file_path = os.path.join(app.config['OUTPUT_FOLDER'], file_name)
+            if os.path.exists(file_path):
+                os.remove(file_path)
+
+        # Delete the record from the database
+        conn.execute('DELETE FROM aecom_reports WHERE id = ?', (aecom_report_id,))
+        conn.commit()
+        success_message = "Record successfully deleted."
+        error_message = ""
+    except Exception as e:
+        success_message = ""
+        error_message = f"Error deleting Record: {e}"
+    finally:
+        conn.close()
+    return redirect(url_for('aecom', success=success_message, error=error_message))
+
 
 @app.route('/update-asset', methods=['POST'])
 def update_asset():

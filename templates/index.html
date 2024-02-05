@@ -1,86 +1,27 @@
-<!doctype html>
-<html lang="en" data-bs-theme="dark">
-  <head>
-    <title>Industrial Safety Inspections - Home</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.0/css/bootstrap.min.css">
-    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
-    <script type="text/javascript" language="javascript" src="https://code.jquery.com/jquery-3.7.0.js"></script>
-    <script type="text/javascript" language="javascript" src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js" integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r" crossorigin="anonymous"></script>
-    <script type="text/javascript" language="javascript" src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.min.js" integrity="sha384-BBtl+eGJRgqQAUMxJ7pMwbEyER4l1g+O15P+16Ep7Q9Q+zqX6gSbd85u4mG4QzX+" crossorigin="anonymous"></script>
-    <script type="text/javascript" language="javascript" src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
-    <script type="text/javascript" language="javascript" src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
-  </head>
-  <body>
-    <nav class="navbar bg-body-tertiary fixed-top" style="background-color: #1D71BE;">
-      <div class="container-fluid">
-        <a class="navbar-brand" href="#">Industrial Safety Inspections - News</a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar" aria-label="Toggle navigation">
-          <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
-          <div class="offcanvas-header">
-            <h5 class="offcanvas-title" id="offcanvasNavbarLabel">Menu</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-          </div>
-          <div class="offcanvas-body">
-            <ul class="navbar-nav justify-content-end flex-grow-1 pe-3">
-              <li class="nav-item">
-                <a class="nav-link active" aria-current="page" href="/">Home</a>
-              </li>
-              <li class="nav-item">
-                <a class="nav-link" href="/assettracker">Asset Tracking</a>
-              </li>
-              <li class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                  Client Reporting
-                </a>
-                <ul class="dropdown-menu">
-                  <li><a class="dropdown-item" href="/aecom">AECOM - Royal Mail</a></li>
-                  <li>
-                    <hr class="dropdown-divider">
-                  </li>
-                  <li><a class="dropdown-item" href="/loler-reports">LOLER Reporting</a></li>
-                  <li><a class="dropdown-item" href="#">Bespoke Report Request</a></li>
-                </ul>
-              </li>
-              <li class="nav-item dropdown">
-                <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                  Training Materials
-                </a>
-                <ul class="dropdown-menu">
-                  <li><a class="dropdown-item" href="/quiz">Engineer Training - LOLER</a></li>
-                  <li><a class="dropdown-item" href="/leaderboard">Engineer Training - LOLER</a></li>
-                  <li>
-                    <hr class="dropdown-divider">
-                  </li>
-                  <li><a class="dropdown-item" href="/leaderboard">Leaderboards</a></li>
-                </ul>
-              </li>
-            </ul>
-            <div class="fixed-bottom">
-
-            </div>
-          </div>
-        </div>
-      </div>
-    </nav>
-    <div class="container" style="padding: 1.5%;">
-        .
-    </div>
-    <div class="container-fluid">
-      <div class='sk-ww-linkedin-page-post' data-embed-id='25356449'></div><script src='https://widgets.sociablekit.com/linkedin-page-posts/widget.js' async defer></script>
-    </div>
-  <button type="button" id="btnSwitch" class="btn btn-secondary" style="position: fixed; bottom: 5px; right: 5px;">Toggle Theme</button>
+{% include 'header.html' %}
+  <div class="container-fluid">
+    <div class='sk-ww-linkedin-page-post' data-embed-id='25356449'></div><script src='https://widgets.sociablekit.com/linkedin-page-posts/widget.js' async defer></script>
+  </div>
+  <button type="button" id="btnSwitch" class="btn btn-secondary" style="position: fixed; bottom: 5px; left: 5px;">Toggle Theme</button>
   </body>
-  <script>
-      document.getElementById('btnSwitch').addEventListener('click',()=>{
-      if (document.documentElement.getAttribute('data-bs-theme') == 'dark') {
-          document.documentElement.setAttribute('data-bs-theme','light')
-      }
-      else {
-          document.documentElement.setAttribute('data-bs-theme','dark')
-      }
-  })
-  </script>
+<script>
+  // Function to switch the theme and save the preference
+  function toggleTheme() {
+    var currentTheme = document.documentElement.getAttribute('data-bs-theme');
+    var newTheme = currentTheme === 'light' ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-bs-theme', newTheme);
+    localStorage.setItem('theme', newTheme); // Save theme preference
+  }
+
+  // Event listener for the toggle button
+  document.getElementById('btnSwitch').addEventListener('click', toggleTheme);
+
+  // Apply saved theme on page load
+  document.addEventListener('DOMContentLoaded', () => {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme) {
+      document.documentElement.setAttribute('data-bs-theme', savedTheme);
+    }
+  });
+</script>
 </html>
