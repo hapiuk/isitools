@@ -90,7 +90,7 @@
                     <td>{{ inspection.next_inspection_date }}</td>
                     <td>{{ inspection.report_count }}</td>
                     <td>
-                        <a href="{{ url_for('download_file', filename=inspection.filename) }}" class="btn btn-primary btn-sm">Download</a>
+                        <a href="#linktodownload" class="btn btn-primary btn-sm">Download</a>
                     </td>
                 </tr>
                 {% endfor %}
