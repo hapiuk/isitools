@@ -174,31 +174,35 @@ def upload_chunk():
 
 @app.route('/start_processing', methods=['POST'])
 def start_processing():
-    client_name = request.form['client_name']
+    data = request.get_json()  # Get data as JSON
+    client_name = data.get('client_name')  # Access client_name from JSON data
+
+    if not client_name:
+        return jsonify({'status': 'error', 'message': 'Client name is missing'}), 400
+
     try:
-        # Adjust this line based on the actual return values of process_loler_pdfs
-        # Assuming it returns csv_file_path, faulty_reports_path, and perhaps more
-        csv_file_path, faulty_reports_path, *_ = process_loler_pdfs(app.config['UPLOAD_FOLDER'], app.config['OUTPUT_FOLDER'], client_name, get_db)
+        # Call your processing function and get the path to the generated file
+        csv_file_path = process_loler_pdfs(app.config['UPLOAD_FOLDER'], app.config['OUTPUT_FOLDER'], client_name, get_db)
         
-        # Clear the input folder after processing is complete
-        clear_input_folder(app.config['UPLOAD_FOLDER'])
-        
-        # Extract filename from the path for the download URL
+        # Extract filename from the path
         filename = os.path.basename(csv_file_path)
         
-        # Adjust the 'download_file' route name if necessary to match your actual download route
+        # Ensure your function to clear the input folder is called correctly
+        clear_input_folder(app.config['UPLOAD_FOLDER'])
+        
+        # Generate URL for downloading the file. Make sure 'download_file' endpoint exists.
         download_url = url_for('download_file', filename=filename, _external=True)
         
-        # Return success response with download URL
         return jsonify({'status': 'success', 'download_url': download_url})
     except Exception as e:
-        # If an error occurs, clear the input folder before returning the error
+        # Clear input folder in case of error
         clear_input_folder(app.config['UPLOAD_FOLDER'])
-        return jsonify({'status': 'error', 'message': str(e)})
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
 
 @app.route('/download_file/<filename>')
 def download_file(filename):
-    # Ensure the path is safe and the file exists
+    # Ensure OUTPUT_FOLDER is correctly set to the directory containing the generated CSV
     return send_from_directory(app.config['OUTPUT_FOLDER'], filename, as_attachment=True)
 
 @app.route('/assettracker')

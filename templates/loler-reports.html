@@ -90,13 +90,8 @@
                     <td>{{ inspection.next_inspection_date }}</td>
                     <td>{{ inspection.report_count }}</td>
                     <td>
-                      <!-- Download Button -->
-                      <a href="" class="btn btn-primary btn-sm">Download</a>
-                      <!-- Delete Button -->
-                      <form action="" method="post" style="display:inline;">
-                          <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure?');">Delete</button>
-                      </form>
-                  </td>
+                        <a href="{{ url_for('download_file', filename=inspection.filename) }}" class="btn btn-primary btn-sm">Download</a>
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -191,17 +186,23 @@ $(document).ready(function () {
         $.ajax({
             url: '/start_processing',
             type: 'POST',
-            // Use jQuery to serialize the data or manually create the data object
-            data: { client_name: clientName }, // Make sure this matches your input field's ID and server-side expectation
+            data: JSON.stringify({ 'client_name': clientName }),
+            contentType: 'application/json;charset=UTF-8',
             success: function(response) {
-                console.log(response.message);
                 if(response.status === 'success') {
+                    // Redirect to the download URL
                     window.location.href = response.download_url;
+                    // Delay the page reload
+                    setTimeout(function() {
+                        // Reload the page to update the view with the new database entry
+                        window.location.reload(true);
+                    }, 1000); // Adjust the delay as needed, 1000ms = 1 second
+                } else {
+                    alert('Error: ' + response.message);
                 }
             },
             error: function(xhr, status, error) {
                 console.error("Processing error:", error);
-                // Handle error
             }
         });
     }

@@ -108,7 +108,7 @@ def extract_additional_information(text, business_entity, date_str):
         "External Inspection Ref No": f"{business_entity}-PWR-{date_str}-{job_no.group(1) if job_no else ''}",
         "Inspection Date": f"{date_obj.strftime('%d/%m/%Y')}",
         "Contractor": "ISI",
-        "Document": f"{business_entity}-PWR-{date_str}.pdf",
+        "Document": f"{business_entity}.-PWR-{date_str}.pdf",
         "Remedial Works": "Yes",
         "Risk Rating": "",
         "Comments": "",
@@ -346,36 +346,6 @@ def process_loler_pdfs(input_folder, output_folder, client_name, get_db):
     db_insert_loler_inspection(client_name, report_date, earliest_next_inspection_date, report_count, get_db)
 
     return csv_output_file
-
- 
-def db_insert_loler_inspection(client_name, report_date, next_inspection_date, report_count, get_db):
-    # Database interaction
-    try:
-        conn = get_db()
-        # Create the table if it doesn't exist
-        conn.execute('''
-            CREATE TABLE IF NOT EXISTS loler_inspections (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                client_name TEXT,
-                report_date TEXT,
-                next_inspection_date TEXT,
-                report_count INTEGER
-            )
-        ''')
-
-        # Insert data into the table
-        conn.execute('''
-            INSERT INTO loler_inspections (client_name, report_date, next_inspection_date, report_count) 
-            VALUES (?, ?, ?, ?)
-        ''', (client_name, report_date, next_inspection_date, report_count))
-        
-        conn.commit()
-    except Exception as e:
-        print(f"Database operation error: {e}")
-    finally:
-        conn.close()
-
-
 
 def db_insert_loler_inspection(client_name, report_date, next_inspection_date, report_count, get_db):
     try:
