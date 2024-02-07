@@ -260,19 +260,6 @@ def db_insert_function(additional_info, get_db):
 
     # Database interaction
     conn = get_db()
-
-    # Create the table if it doesn't exist
-    conn.execute('''
-        CREATE TABLE IF NOT EXISTS aecom_reports (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            inspection_ref TEXT,
-            inspection_date TEXT,
-            document_name TEXT,
-            zipname TEXT,
-            business_entity TEXT
-        )
-    ''')
-
     # Insert data into the table
     conn.execute('''
         INSERT INTO aecom_reports (inspection_ref, inspection_date, document_name, zipname, business_entity) 

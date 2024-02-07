@@ -6,8 +6,9 @@ import shutil
 import zipfile
 import sqlite3
 import random
-from modules.config import Config
+from modules.config import Config, get_db, init_db
 from modules.pdf_processing.pdf_utils import process_puwer_documents, process_loler_pdfs, allowed_file, clear_input_folder
+from modules.task_processing.task_utils import add_task, get_tasks, get_comments_for_task, add_comment_to_task
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024
@@ -18,15 +19,59 @@ app.config.from_object(Config)
 def request_entity_too_large(error):
     return 'File Too Large', 413
 
-# Database helper functions
-def get_db():
-    conn = sqlite3.connect(Config.DATABASE)
-    conn.row_factory = sqlite3.Row
-    return conn
 
 @app.route('/')
 def index():
     return render_template('index.html', title='Home')
+
+@app.route('/assettracker')
+def assettracker():
+    search_query = request.args.get('search', '', type=str)
+    success_message = request.args.get('success', '')
+    error_message = request.args.get('error', '')
+
+    conn = get_db()
+
+    if search_query:
+        assets = conn.execute('''
+            SELECT * FROM assets
+            WHERE (isi_number LIKE ? OR device_type LIKE ? OR make_model LIKE ? OR serial_number LIKE ? OR imei LIKE ? OR mac_address LIKE ? OR allocated_user LIKE ? OR date_stamp LIKE ?)
+            ORDER BY id
+            LIMIT ? OFFSET ?
+        ''', (f"%{search_query}%",) * 8 + (assets_per_page, (page - 1) * assets_per_page)).fetchall()
+    else:
+        assets = conn.execute('''
+            SELECT * FROM assets
+            ORDER BY id
+        ''',).fetchall()
+
+    conn.close()
+    return render_template('assettracker.html', assets=assets, success_message=success_message, error_message=error_message, title='ISI Assets')
+
+
+@app.route('/tasks', methods=['GET', 'POST'])
+def tasks():
+    init_db()
+    if request.method == 'POST':
+        # Handle task addition here
+        pass 
+    tasks = get_tasks()
+    return render_template('tasks.html', tasks=tasks, title='Task Tracking')
+
+@app.route('/get-comments/<int:task_id>', methods=['GET'])
+def get_comments(task_id):
+    comments = get_comments_for_task(task_id)
+    comments_list = [{'commenterName': c.commenter_name, 'commentText': c.comment_text} for c in comments]
+    return jsonify(comments_list)
+
+
+@app.route('/add-comment', methods=['POST'])
+def add_comment():
+    task_id = request.form['task_id']
+    commenter_name = request.form['commenter_name']
+    comment = request.form['comment']
+    add_comment_to_task(task_id, commenter_name, comment)
+    return jsonify({'success': True})
 
 
 @app.route('/aecom', methods=['GET', 'POST'])
@@ -87,18 +132,6 @@ def aecom():
     # Fetch data from aecom_reports table
     conn = get_db()
 
-    # Create the table if it doesn't exist
-    conn.execute('''
-        CREATE TABLE IF NOT EXISTS aecom_reports (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            inspection_ref TEXT,
-            inspection_date TEXT,
-            document_name TEXT,
-            zipname TEXT,
-            business_entity TEXT
-        )
-    ''')
-
     aecom_reports = conn.execute('SELECT * FROM aecom_reports ORDER BY id').fetchall()
     conn.close()
 
@@ -128,18 +161,6 @@ def loler_reports():
 
     # Fetch the LOLER inspections from the database
     conn = get_db()
-    
-    conn.execute('''
-        CREATE TABLE IF NOT EXISTS loler_inspections (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            client_name TEXT,
-            report_date TEXT,
-            next_inspection_date TEXT,
-            file_name TEXT,
-            report_count INTEGER
-        )
-    ''')
-    
     loler_inspections = conn.execute('SELECT * FROM loler_inspections').fetchall()
     conn.close()
 
@@ -238,46 +259,6 @@ def download_file(filename):
     # Ensure OUTPUT_FOLDER is correctly set to the directory containing the generated CSV
     return send_from_directory(app.config['OUTPUT_FOLDER'], filename, as_attachment=True)
 
-@app.route('/assettracker')
-def assettracker():
-    search_query = request.args.get('search', '', type=str)
-    success_message = request.args.get('success', '')
-    error_message = request.args.get('error', '')
-
-    conn = get_db()
-
-    try:
-        conn.execute('''
-            CREATE TABLE IF NOT EXISTS assets (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                isi_number TEXT,
-                device_type TEXT,
-                make_model TEXT,
-                serial_number TEXT,
-                imei TEXT,
-                mac_address TEXT,
-                allocated_user TEXT,
-                date_stamp TEXT
-            )
-        ''')
-    except sqlite3.Error as e:
-        print(f"SQLite error: {e}")
-    # Implement filtering based on the search query
-    if search_query:
-        assets = conn.execute('''
-            SELECT * FROM assets
-            WHERE (isi_number LIKE ? OR device_type LIKE ? OR make_model LIKE ? OR serial_number LIKE ? OR imei LIKE ? OR mac_address LIKE ? OR allocated_user LIKE ? OR date_stamp LIKE ?)
-            ORDER BY id
-            LIMIT ? OFFSET ?
-        ''', (f"%{search_query}%",) * 8 + (assets_per_page, (page - 1) * assets_per_page)).fetchall()
-    else:
-        assets = conn.execute('''
-            SELECT * FROM assets
-            ORDER BY id
-        ''',).fetchall()
-
-    conn.close()
-    return render_template('assettracker.html', assets=assets, success_message=success_message, error_message=error_message, title='ISI Assets')
 
 @app.route('/add-asset', methods=['POST'])
 def add_asset():
@@ -387,6 +368,8 @@ def update_asset():
 
 if __name__ == "__main__":
     import socket
+
+    init_db()
 
     def is_valid_ip(ip):
         try:
