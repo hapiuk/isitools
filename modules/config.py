@@ -24,53 +24,73 @@ def get_db():
 def init_db():
     conn = get_db()
     cursor = conn.cursor()
+
     # Create the employees table
-    cursor.execute('''CREATE TABLE IF NOT EXISTS employees (
-                        id INTEGER PRIMARY KEY,
-                        name TEXT NOT NULL,
-                        email TEXT,
-                        role TEXT
-                    );''')
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS employees (
+            id INTEGER PRIMARY KEY,
+            name TEXT NOT NULL,
+            email TEXT,
+            role TEXT
+        );
+    ''')
+
     # Create the task status table
-    cursor.execute('''CREATE TABLE IF NOT EXISTS taskstatus (
-                        id INTEGER PRIMARY KEY,
-                        status TEXT
-                    );''')
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS taskstatus (
+            id INTEGER PRIMARY KEY,
+            status_name TEXT UNIQUE NOT NULL
+        );
+    ''')
+
     # Create the task priority table
-    cursor.execute('''CREATE TABLE IF NOT EXISTS taskpriority (
-                        id INTEGER PRIMARY KEY,
-                        priority TEXT
-                    );''')
-    # Create the task catagory table
-    cursor.execute('''CREATE TABLE IF NOT EXISTS taskcatagory (
-                        id INTEGER PRIMARY KEY,
-                        catagory TEXT
-                    );''')
-    # Create the tasks table with an assignee_id reference to the employees table
-    cursor.execute('''CREATE TABLE IF NOT EXISTS tasks (
-                        id INTEGER PRIMARY KEY,
-                        title TEXT,
-                        description TEXT,
-                        status INTEGER DEFAULT '1',
-                        priority INTEGER DEFAULT '2',
-                        category INTEGER,
-                        assignee_id INTEGER,
-                        reporter_name INTEGER,
-                        due_date TEXT,
-                        attachment TEXT,
-                        resolution TEXT,
-                        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-                        updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
-                        FOREIGN KEY(assignee_id) REFERENCES employees(id)
-                    );''')
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS taskpriority (
+            id INTEGER PRIMARY KEY,
+            priority_name TEXT UNIQUE NOT NULL
+        );
+    ''')
+
+    # Create the task category table
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS taskcategory (
+            id INTEGER PRIMARY KEY,
+            category_name TEXT UNIQUE NOT NULL
+        );
+    ''')
+
+    # Create the tasks table with foreign key references
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS tasks (
+            id INTEGER PRIMARY KEY,
+            title TEXT NOT NULL,
+            description TEXT,
+            status INTEGER DEFAULT 1,
+            priority INTEGER DEFAULT 2,
+            category INTEGER,
+            assignee_id INTEGER,
+            reporter_id INTEGER,
+            due_date TEXT,
+            attachment TEXT,
+            resolution TEXT,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY(status) REFERENCES taskstatus(id),
+            FOREIGN KEY(priority) REFERENCES taskpriority(id),
+            FOREIGN KEY(category) REFERENCES taskcategory(id),
+            FOREIGN KEY(assignee_id) REFERENCES employees(id),
+            FOREIGN KEY(reporter_id) REFERENCES employees(id) 
+        );
+    ''')
     # Create the comments table with a task_id reference to the tasks table
     cursor.execute('''CREATE TABLE IF NOT EXISTS comments (
                         id INTEGER PRIMARY KEY,
                         task_id INTEGER,
                         comment TEXT NOT NULL,
-                        commenter_name TEXT NOT NULL,
+                        commenter_id INTEGER,
                         created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-                        FOREIGN KEY(task_id) REFERENCES tasks(id) ON DELETE CASCADE
+                        FOREIGN KEY(task_id) REFERENCES tasks(id) ON DELETE CASCADE,
+                        FOREIGN KEY(commenter_id) REFERENCES employees(id) 
                     );''')
     # Create aecom reports table
     conn.execute('''CREATE TABLE IF NOT EXISTS aecom_reports (

@@ -26,7 +26,7 @@
                 data-assignee-name="{{ task.assignee_name }}" 
                 data-reporter-name="{{ task.reporter_name }}" 
                 data-due-date="{{ task.due_date }}"
-                data-created-at="{{ task.created_at }}"> <!-- Same assumption for formatting -->
+                data-created-at="{{ task.created_at }}">
                 <td>{{ task.id }}</td>
                 <td>{{ task.title }}</td>
                 <td>{{ task.description }}</td>
@@ -52,33 +52,47 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <div class="container text-center">
-                  <div class="row">
-                    <div class="col order-first">
+                <form id="update-task-form">
+                    <div class="container text-center">
+                      <div class="row">
+                        <div class="col order-first">
                             <div class="row">
                                 <div class="col">
                                     <div class="form-floating mb-3">
-                                        <input type="text" class="form-control" id="task-description" name="taskDescription" rows="3">
+                                        <input type="text" class="form-control" id="task-title" name="taskTitle">
+                                        <label for="taskTitle">Title:</label>
+                                    </div>
+                                    <div class="form-floating mb-3">
+                                        <input type="text" class="form-control" id="task-description" name="taskDescription" height="200px">
                                         <label for="deviceType">Description:</label>
                                     </div>
+                                    <!-- Task Status Dropdown -->
                                     <div class="form-floating mb-3">
-                                        <input type="text" class="form-control" id="task-status" name="taskStatus">
+                                        <select class="form-select" id="task-status" name="taskStatus">
+                                            <!-- Options will be added dynamically -->
+                                        </select>
                                         <label for="taskStatus">Status:</label>
                                     </div>
+                                    <!-- Task Priority Dropdown -->
                                     <div class="form-floating mb-3">
-                                        <input type="text" class="form-control" id="task-priority" name="taskPriority">
+                                        <select class="form-select" id="task-priority" name="taskPriority">
+                                            <!-- Options will be added dynamically -->
+                                        </select>
                                         <label for="taskPriority">Task Priority:</label>
                                     </div>
                                     <div class="row">
                                         <div class="col">
+                                            <!-- Assigned To Dropdown -->
                                             <div class="form-floating mb-3">
-                                                <input type="text" class="form-control" id="task-assignee" name="taskAssignee">
+                                                <select class="form-select" id="task-assignee" name="taskAssignee">
+                                                    <!-- Options will be added dynamically -->
+                                                </select>
                                                 <label for="taskAssignee">Assigned To:</label>
                                             </div>
                                         </div>
                                         <div class="col">
                                             <div class="form-floating mb-3">
-                                                <input type="text" class="form-control" id="task-reportername" name="taskReportername">
+                                                <input type="text" class="form-control" id="task-reportername" name="taskReportername" readonly>
                                                 <label for="taskReportername">Logged By:</label>
                                             </div>
                                         </div>
@@ -96,23 +110,24 @@
                                     </div>
                                 </div>
                             </div>
-                    </div>
-                    <div class="col order-last">
-                        <form id="add-comment-form">
-                            <div class="form-floating mb-3">
-                                <textarea class="form-control" id="comment-text" placeholder="Add new comment..." name="comment-text" rows="3"></textarea>
-                                <label for="comment-text" class="form-label">New Comment</label>
-                            </div>
-                            <button type="submit" class="btn btn-primary" style="width: 100%;">Submit Comment</button>
-                        </form>
-                        <div class="form-floating mb-3 overflow-auto">
-                            <ul id="task-comments-list" class="list-unstyled">
-                                <!-- Comments will be listed here -->
-                            </ul>
                         </div>
+                        <div class="col order-last">
+                            <form id="add-comment-form">
+                                <div class="form-floating mb-3">
+                                    <textarea class="form-control" id="comment-text" placeholder="Add new comment..." name="comment-text" rows="3"></textarea>
+                                    <label for="comment-text" class="form-label">New Comment</label>
+                                </div>
+                                <button type="submit" class="btn btn-primary" style="width: 100%;">Submit Comment</button>
+                            </form>
+                            <div class="form-floating mb-3 overflow-auto">
+                                <ul id="task-comments-list" class="list-unstyled">
+                                    <!-- Comments will be listed here -->
+                                </ul>
+                            </div>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
+                </form>
             </div>
         </div>
     </div>
@@ -126,46 +141,140 @@ $(document).ready(function () {
         paging: true,
     });
 
-    $('#tasks-table tbody').on('click', '.clickable-row', function () {
-        const taskData = $(this).data();
 
-        // Populate the modal fields; use .val() for inputs and .text() or .html() for others as needed
+    // Function to populate "Assigned To" dropdown
+    function populateAssignedToDropdown(selectedEmployeeId) {
+        $.ajax({
+            url: '/get-employees',
+            type: 'GET',
+            success: function(response) {
+                const assignedToDropdown = $('#task-assignee');
+                assignedToDropdown.empty(); // Clear existing options first
+                response.forEach(function(employee) {
+                    let isSelected = employee.id === selectedEmployeeId;
+                    assignedToDropdown.append(new Option(employee.name, employee.id, isSelected, isSelected));
+                });
+            },
+            error: function(error) {
+                console.error('Error fetching employees:', error);
+            }
+        });
+    }
+
+
+    function populateTaskPriorityDropdown(selectedPriorityId) {
+        $.ajax({
+            url: '/get-task-priorities', // Make sure this endpoint matches your Flask route
+            type: 'GET',
+            success: function(response) {
+                const taskPriorityDropdown = $('#task-priority');
+                taskPriorityDropdown.empty();
+                response.forEach(function(priority) {
+                    let isSelected = priority.id == selectedPriorityId; // Convert to string if necessary
+                    // Note the change to priority.priority to match JSON response
+                    taskPriorityDropdown.append(new Option(priority.priority, priority.id, isSelected, isSelected));
+                });
+            },
+            error: function(error) {
+                console.error('Error fetching task priorities:', error);
+            }
+        });
+    }
+
+    function populateTaskStatusDropdown(selectedStatusId) {
+        $.ajax({
+            url: '/get-task-statuses', // Make sure this endpoint matches your Flask route
+            type: 'GET',
+            success: function(response) {
+                const taskStatusDropdown = $('#task-status');
+                taskStatusDropdown.empty();
+                response.forEach(function(status) {
+                    let isSelected = status.id == selectedStatusId; // Convert to string if necessary
+                    // Note the change to status.status to match JSON response
+                    taskStatusDropdown.append(new Option(status.status, status.id, isSelected, isSelected));
+                });
+            },
+            error: function(error) {
+                console.error('Error fetching task statuses:', error);
+            }
+        });
+    }
+
+    $('#update-task-form').submit(function(e) {
+        e.preventDefault(); // Prevent the default form submission behavior
+
+        const taskId = $('#modal-task-id').val(); // Assuming this hidden input holds the current task ID
+        const updateData = {
+            title: $('#task-title').val(),
+            description: $('#task-description').val(),
+            status: $('#task-status').val(),
+            priority: $('#task-priority').val(),
+            assigneeId: $('#task-assignee').val(),
+            dueDate: $('#task-duedate').val(),
+            // Add other fields as necessary
+        };
+
+        $.ajax({
+            url: `/update-task/${taskId}`, // Make sure this matches your Flask route
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(updateData),
+            success: function(response) {
+                alert('Task updated successfully');
+                // Close the modal, refresh the page, or update the UI as needed
+                $('#task-details-modal').modal('hide');
+                location.reload();
+            },
+            error: function(xhr, status, error) {
+                console.error('Error updating task:', error);
+                alert('Failed to update task. Please try again.');
+            }
+        });
+    });
+
+    // Function to populate modal fields and load comments
+    function populateModalAndLoadComments(taskData) {
+        // Populate the modal fields
         $('#task-id-display').text(taskData.taskId);
-        $('#modal-task-id').val(taskData.modaltaskId);
-        $('#task-description').val(taskData.description); // Assuming you have inputs to display these
+        $('#modal-task-id').val(taskData.taskId);
+        $('#task-title').val(taskData.title);
+        $('#task-description').val(taskData.description);
         $('#task-status').val(taskData.status);
         $('#task-priority').val(taskData.priority);
-        $('#task-assignee').val(taskData.assigneeName); // make sure you have `data-assignee-name` attribute
-        $('#task-reportername').val(taskData.reporterName); // and `data-reporter-name`
-        $('#task-duedate').val(taskData.dueDate); // and `data-due-date`
-        $('#date-stamp').val(taskData.createdAt); // and `data-created-at`
+        $('#task-reportername').val(taskData.reporterName);
+        $('#task-duedate').val(taskData.dueDate);
+        $('#date-stamp').val(taskData.createdAt);
+
+        // Populate "Assigned To" dropdown with selected employee
+        populateAssignedToDropdown(taskData.assigneeId);
+        populateTaskPriorityDropdown(taskData.priorityId);
+        populateTaskStatusDropdown(taskData.statusId);
 
         // Load comments for this task
         loadComments(taskData.taskId);
+    }
 
-        // Show the modal
+    // Click event for table rows
+    $('#tasks-table tbody').on('click', '.clickable-row', function () {
+        const taskData = $(this).data();
+        populateModalAndLoadComments(taskData);
         $('#task-details-modal').modal('show');
+            populateAssignedToDropdown(taskData.assigneeId); // Assuming taskData is accessible
+            populateTaskPriorityDropdown(taskData.priorityId);
+            populateTaskStatusDropdown(taskData.statusId);
     });
 
+    // Function to load comments
     function loadComments(taskId) {
-        console.log("Loading comments for task ID:", taskId); // Debugging
         $.ajax({
             url: `/get-comments/${taskId}`,
             type: 'GET',
             success: function(response) {
-                $('#task-comments-list').empty(); // Clear existing comments first
-                
-                if (Array.isArray(response)) {
-                    response.forEach(function(comment) {
-                        $('#task-comments-list').append(`<li><div class="card" style="width: 100%; margin-top:0.5em;"><div class="card-body"><p class="card-text">${comment.comment}</p></div><div class="card-footer text-body-secondary">Posted By:${comment.commenter_name} @ ${comment.created_at}</div></li>`);
-                    });
-                } else if (response.comments && Array.isArray(response.comments)) {
-                    response.comments.forEach(function(comment) {
-                        $('#task-comments-list').append(`<li><div class="card" style="width: 100%; margin-top:0.5em;"><div class="card-body"><p class="card-text">${comment.comment}</p></div><div class="card-footer text-body-secondary">Posted By:${comment.commenter_name} @ ${comment.created_at}</div></li>`);
-                    });
-                } else {
-                    console.error('Invalid response format:', response);
-                }
+                $('#task-comments-list').empty(); // Clear existing comments
+                // Append comments to list
+                response.forEach(function(comment) {
+                    $('#task-comments-list').append(`<li><div class="card"><div class="card-body">${comment.comment}</div><div class="card-footer">Posted by: ${comment.commenter_name} on ${comment.created_at}</div></div></li>`);
+                });
             },
             error: function(error) {
                 console.error('Error loading comments:', error);
@@ -173,23 +282,20 @@ $(document).ready(function () {
         });
     }
 
-
+    // Form submission for adding comments
     $('#add-comment-form').submit(function(e) {
         e.preventDefault();
-        const taskId = $('#task-details-modal').data('task-id');
+        const taskId = $('#modal-task-id').val();
         const commentText = $('#comment-text').val();
-
+        // AJAX call to add comment
         $.ajax({
             url: '/add-comment',
             type: 'POST',
-            data: JSON.stringify({
-                'task_id': taskId,
-                'comment': commentText,
-            }),
             contentType: 'application/json; charset=utf-8',
+            data: JSON.stringify({ 'task_id': taskId, 'comment': commentText }),
             success: function(response) {
-                $('#comment-text').val('');
-                loadComments(taskId);
+                $('#comment-text').val(''); // Clear comment input
+                loadComments(taskId); // Reload comments
             },
             error: function(error) {
                 console.error('Error adding comment:', error);
@@ -198,6 +304,5 @@ $(document).ready(function () {
     });
 });
 </script>
-
 </html>
 

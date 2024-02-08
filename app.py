@@ -60,9 +60,106 @@ def tasks():
 
 @app.route('/get-comments/<int:task_id>', methods=['GET'])
 def get_comments(task_id):
-    comments = get_comments_for_task(task_id)
-    comments_list = [{'commenterName': c.commenter_name, 'commentText': c.comment_text} for c in comments]
-    return jsonify(comments_list)
+    conn = get_db()  # Ensure this function returns a database connection
+    cursor = conn.cursor()  # Create a cursor object using the connection
+    
+    try:
+        # Use the SQL query to fetch comments and join with the employees table
+        cursor.execute('''
+            SELECT c.id, c.task_id, c.comment, e.name AS commenter_name, c.created_at
+            FROM comments c
+            JOIN employees e ON c.commenter_id = e.id
+            WHERE c.task_id = ?
+            ORDER BY c.created_at DESC;
+        ''', (task_id,))
+        
+        comments = cursor.fetchall()
+        # Convert the results into a list of dicts to jsonify
+        comments_list = [
+            {
+                'id': comment['id'],
+                'task_id': comment['task_id'],
+                'comment': comment['comment'],
+                'commenter_name': comment['commenter_name'],
+                'created_at': comment['created_at']
+            } for comment in comments
+        ]
+        
+        return jsonify(comments_list)
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return jsonify({"error": "Internal server error"}), 500
+    finally:
+        cursor.close()
+        conn.close()
+
+@app.route('/get-employees', methods=['GET'])
+def get_employees():
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute('SELECT id, name FROM employees ORDER BY name')
+    employees = cursor.fetchall()
+    employees_list = [{'id': emp['id'], 'name': emp['name']} for emp in employees]
+    cursor.close()
+    conn.close()
+    return jsonify(employees_list)
+
+@app.route('/get-task-priorities', methods=['GET'])
+def get_task_priorities():
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute('SELECT id, priority_name FROM taskpriority ORDER BY id')
+    priorities = cursor.fetchall()
+    priorities_list = [{'id': priority['id'], 'priority': priority['priority_name']} for priority in priorities]
+    cursor.close()
+    conn.close()
+    return jsonify(priorities_list)
+
+@app.route('/get-task-statuses', methods=['GET'])
+def get_task_statuses():
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute('SELECT id, status_name FROM taskstatus ORDER BY id')
+    statuses = cursor.fetchall()
+    statuses_list = [{'id': status['id'], 'status': status['status_name']} for status in statuses]
+    cursor.close()
+    conn.close()
+    return jsonify(statuses_list)
+
+@app.route('/update-task/<int:task_id>', methods=['POST'])
+def update_task(task_id):
+    data = request.get_json()
+    updated_data = request.json
+    title = updated_data.get('title')
+    description = updated_data.get('description')
+    status = updated_data.get('status')
+    priority = updated_data.get('priority')
+    assignee_id = updated_data.get('assigneeId')
+    due_date = updated_data.get('dueDate')
+
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        # Update task in the database
+        cursor.execute('''
+            UPDATE tasks SET
+            title = ?,
+            description = ?,
+            status = ?,
+            priority = ?,
+            assignee_id = ?,
+            due_date = ?
+            WHERE id = ?
+        ''', (title, description, status, priority, assignee_id, due_date, task_id))
+        conn.commit()
+
+        return jsonify({'success': True, 'message': 'Task updated successfully'}), 200
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return jsonify({'success': False, 'message': 'Failed to update task'}), 500
+    finally:
+        cursor.close()
+        conn.close()
 
 
 @app.route('/add-comment', methods=['POST'])
