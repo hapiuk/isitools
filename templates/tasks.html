@@ -10,7 +10,7 @@
                 <th>Status</th>
                 <th>Priority</th>
                 <th>Assignee</th>
-                <th>Logged By</th>
+
                 <th>Due Date</th>
             </tr>
         </thead>
@@ -35,11 +35,24 @@
                 <td>{{ task.status }}</td> 
                 <td>{{ task.priority_name }}</td>
                 <td>{{ task.assignee_name }}</td>
-                <td>{{ task.reporter_id }}</td>
+
                 <td>{{ task.due_date }}</td>
             </tr>
             {% endfor %}
         </tbody>
+        <tfoot>
+            <tr>
+                <th>
+                    <button type="button" data-bs-toggle="modal" data-bs-target="#add-task-modal" class="btn btn-primary">Create Task</button>
+                </th>
+                <th></th>
+                <th></th>
+                <th></th>
+                <th></th>
+                <th></th>
+                <th></th>
+            </tr>
+        </tfoot>
     </table>
 </div>
 
@@ -133,6 +146,56 @@
     </div>
 </div>
 
+<!-- Add New Task Modal -->
+<div class="modal fade" id="add-task-modal" tabindex="-1" aria-labelledby="addTaskModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addTaskModalLabel">Add New Task</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="add-task-form">
+                    <div class="mb-3">
+                        <label for="new-task-title" class="form-label">Title</label>
+                        <input type="text" class="form-control" id="new-task-title" name="title" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="new-task-description" class="form-label">Description</label>
+                        <textarea class="form-control" id="new-task-description" name="description" rows="3" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="new-task-status" class="form-label">Status</label>
+                        <select class="form-select" id="new-task-status" name="status">
+                            <!-- Status options will be dynamically loaded here -->
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="new-task-priority" class="form-label">Priority</label>
+                        <select class="form-select" id="new-task-priority" name="priority">
+                            <!-- Priority options will be dynamically loaded here -->
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="new-task-assignee" class="form-label">Assignee</label>
+                        <select class="form-select" id="new-task-assignee" name="assignee">
+                            <!-- Assignee options will be dynamically loaded here -->
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="new-task-due-date" class="form-label">Due Date</label>
+                        <input type="date" class="form-control" id="new-task-due-date" name="dueDate">
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-primary">Create Task</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+
                                 
 <script>
 $(document).ready(function () {
@@ -141,7 +204,90 @@ $(document).ready(function () {
         paging: true,
     });
 
-    
+    function populateDropdowns() {
+        fetch('/get-task-statuses')
+            .then(response => response.json())
+            .then(data => {
+                const statusDropdown = document.getElementById('new-task-status');
+                data.forEach(status => {
+                    const option = new Option(status.status, status.id);
+                    statusDropdown.add(option);
+                });
+            });
+
+        fetch('/get-task-priorities')
+            .then(response => response.json())
+            .then(data => {
+                const priorityDropdown = document.getElementById('new-task-priority');
+                data.forEach(priority => {
+                    const option = new Option(priority.priority, priority.id);
+                    priorityDropdown.add(option);
+                });
+            });
+
+        fetch('/get-employees')
+            .then(response => response.json())
+            .then(data => {
+                const assigneeDropdown = document.getElementById('new-task-assignee');
+                data.forEach(assignee => {
+                    const option = new Option(assignee.name, assignee.id);
+                    assigneeDropdown.add(option);
+                });
+            });
+    }
+
+    // Call the function when the modal is shown
+    document.getElementById('add-task-modal').addEventListener('show.bs.modal', populateDropdowns);
+
+
+    // Function to handle form submission
+    document.getElementById('add-task-form').addEventListener('submit', function(event) {
+        event.preventDefault(); // Prevent default form submission
+
+        // Create FormData object to collect form data
+        const formData = new FormData(this);
+
+        // Send form data to the backend
+        fetch('/add-task', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            if (response.ok) {
+                // Reset form after successful submission
+                this.reset();
+                // Close the modal
+                $('#add-task-modal').modal('hide');
+                // Show success message
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Task added successfully!',
+                    showConfirmButton: false,
+                    timer: 1500,
+                }).then(() => {
+                    // Redirect to task.html page
+                    window.location.href = '/tasks';
+                });
+            } else {
+                // Handle error response
+                return response.json().then(data => {
+                    throw new Error(data.error);
+                });
+            }
+        })
+        .catch(error => {
+            // Handle error
+            console.error('Error:', error.message);
+            // Show error message
+            Swal.fire({
+                icon: 'error',
+                title: 'Oops...',
+                text: error.message
+            });
+        });
+    });
+
+ 
     $('#tasks-table tbody').on('click', '.clickable-row', function () {
         const taskData = $(this).data();
         console.log("Clicked task data:", taskData);
@@ -327,7 +473,6 @@ $(document).ready(function () {
             }
         });
     });
-
 });
 </script>
 

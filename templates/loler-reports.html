@@ -99,6 +99,16 @@ $(document).ready(function () {
     $('#start-upload').click(function(){
         var clientName = $('#client_name').val(); // Capture client name when the process starts
         if(clientName) {
+            // Show "Please wait" message
+            Swal.fire({
+                title: 'Please wait...',
+                html: 'Uploading files...',
+                allowOutsideClick: false,
+                onBeforeOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
             r.opts.query.client_name = clientName; // Include client name in query
             r.upload();
         } else {
@@ -106,37 +116,72 @@ $(document).ready(function () {
         }
     });
 
+    // Function to handle file upload completion
     r.on('complete', function(){
         // All files have been uploaded
         console.log("All files have been uploaded successfully.");
         var clientName = $('#client_name').val();
-        startProcessing(clientName); // Call startProcessing function after all files are uploaded
+        
+        // Close the loading message
+        Swal.close();
+
+        // Call startProcessing function after all files are uploaded
+        startProcessing(clientName); 
     });
 
     function startProcessing(clientName) {
-        $.ajax({
-            url: '/start_processing',
-            type: 'POST',
-            data: JSON.stringify({ 'client_name': clientName }),
-            contentType: 'application/json;charset=UTF-8',
-            success: function(response) {
-                if(response.status === 'success') {
-                    // Redirect to the download URL
-                    window.location.href = response.download_url;
-                    // Delay the page reload
-                    setTimeout(function() {
-                        // Reload the page to update the view with the new database entry
-                        window.location.reload(true);
-                    }, 1000); // Adjust the delay as needed, 1000ms = 1 second
-                } else {
-                    alert('Error: ' + response.message);
+            // Show "Please wait" message
+            Swal.fire({
+                title: 'Please wait...',
+                html: 'Processing...',
+                allowOutsideClick: false,
+                onBeforeOpen: () => {
+                    Swal.showLoading();
                 }
-            },
-            error: function(xhr, status, error) {
-                console.error("Processing error:", error);
-            }
-        });
-    }
+            });
+
+            $.ajax({
+                url: '/start_processing',
+                type: 'POST',
+                data: JSON.stringify({ 'client_name': clientName }),
+                contentType: 'application/json;charset=UTF-8',
+                success: function(response) {
+                    if(response.status === 'success') {
+                        // Close the loading message
+                        Swal.close();
+                        // Show success message
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Processing started successfully!',
+                            showConfirmButton: false,
+                            timer: 1500
+                        });
+                        
+                        // Redirect to the download URL
+                        window.location.href = response.download_url;
+                        // Delay the page reload
+                        setTimeout(function() {
+                            // Reload the page to update the view with the new database entry
+                            window.location.reload(true);
+                        }, 1000); // Adjust the delay as needed, 1000ms = 1 second
+                    } else {
+                        alert('Error: ' + response.message);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error("Processing error:", error);
+                    // Close the loading message
+                    Swal.close();
+                    // Show error message
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Oops...',
+                        text: 'An error occurred while processing.'
+                    });
+                }
+            });
+        }
+
     $('.delete-record-button').click(function () {
         var id = $(this).data('id'); // Get the id value from the data-id attribute
         if (confirm('Are you sure you want to delete this record?')) {

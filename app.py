@@ -162,7 +162,29 @@ def update_task(task_id):
         cursor.close()
         conn.close()
 
+@app.route('/add-task', methods=['POST'])
+def add_task():
+    if request.method == 'POST':
+        # Get form data
+        title = request.form['title']
+        description = request.form['description']
+        status = request.form['status']
+        priority = request.form['priority']
+        assignee = request.form['assignee']
+        due_date = request.form['dueDate']
 
+        # Insert the task into the database
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute('''INSERT INTO tasks (title, description, status, priority, assignee_id, due_date)
+                          VALUES (?, ?, ?, ?, ?, ?)''', (title, description, status, priority, assignee, due_date))
+        conn.commit()
+        conn.close()
+
+        return jsonify({'message': 'Task added successfully'}), 201
+    else:
+        return jsonify({'error': 'Method not allowed'}), 405
+        
 @app.route('/add-comment', methods=['POST'])
 def add_comment():
     try:
