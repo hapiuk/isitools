@@ -60,6 +60,7 @@ def tasks():
 
 @app.route('/get-comments/<int:task_id>', methods=['GET'])
 def get_comments(task_id):
+    app.logger.info(f'Updating task {task_id}')
     conn = get_db()  # Ensure this function returns a database connection
     cursor = conn.cursor()  # Create a cursor object using the connection
     
@@ -164,11 +165,26 @@ def update_task(task_id):
 
 @app.route('/add-comment', methods=['POST'])
 def add_comment():
-    task_id = request.form['task_id']
-    commenter_name = request.form['commenter_name']
-    comment = request.form['comment']
-    add_comment_to_task(task_id, commenter_name, comment)
-    return jsonify({'success': True})
+    try:
+        data = request.get_json()
+        task_id = data.get('task_id')
+        comment = data.get('comment')
+        # Placeholder commenter_id
+        commenter_id = data.get('commenter_id', 1)  # Default to 1 or another placeholder value
+        created_at = datetime.now()  # Generates the current timestamp
+
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute('INSERT INTO comments (task_id, comment, commenter_id, created_at) VALUES (?, ?, ?, ?)',
+                       (task_id, comment, commenter_id, created_at))
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        return jsonify({'success': True, 'message': 'Comment added successfully'}), 200
+    except Exception as e:
+        print(f"An error occurred: {e}")  # Use app.logger in a real app
+        return jsonify({'success': False, 'message': 'Failed to add comment'}), 500
 
 
 @app.route('/aecom', methods=['GET', 'POST'])
