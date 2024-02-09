@@ -12,30 +12,31 @@
                 <th>Assignee</th>
                 <th>Logged By</th>
                 <th>Due Date</th>
-                <th>Created At</th>
             </tr>
         </thead>
         <tbody>
             {% for task in tasks %}
             <tr class="clickable-row" 
                 data-task-id="{{ task.id }}" 
+                data-status-id="{{ task.statusId }}"
+                data-priority-id="{{ task.priorityId }}"
+                data-assignee-id="{{ task.assigneeId }}" 
                 data-title="{{ task.title }}"
                 data-description="{{ task.description }}" 
-                data-status="{{ task.status }}"
+                data-status="{{ task.status }}" 
                 data-priority="{{ task.priority }}" 
                 data-assignee-name="{{ task.assignee_name }}" 
-                data-reporter-name="{{ task.reporter_name }}" 
+                data-reporter-name="{{ task.reporter_id }}" 
                 data-due-date="{{ task.due_date }}"
                 data-created-at="{{ task.created_at }}">
                 <td>{{ task.id }}</td>
                 <td>{{ task.title }}</td>
                 <td>{{ task.description }}</td>
-                <td>{{ task.status }}</td>
-                <td>{{ task.priority }}</td>
+                <td>{{ task.status }}</td> 
+                <td>{{ task.priority_name }}</td>
                 <td>{{ task.assignee_name }}</td>
-                <td>{{ task.reporter_name }}</td>
+                <td>{{ task.reporter_id }}</td>
                 <td>{{ task.due_date }}</td>
-                <td>{{ task.created_at }}</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -68,18 +69,24 @@
                                             <label for="deviceType">Description:</label>
                                         </div>
                                         <div class="form-floating mb-3">
-                                            <input type="text" class="form-control" id="task-status" name="taskStatus">
+                                            <select class="form-select" id="task-status" name="taskStatus">
+                                                <!-- Leave Clear for population -->
+                                            </select>
                                             <label for="taskStatus">Status:</label>
                                         </div>
                                         <div class="form-floating mb-3">
-                                            <input type="text" class="form-control" id="task-priority" name="taskPriority">
-                                            <label for="taskPriority">Task Priority:</label>
+                                            <select class="form-select" id="task-priority" name="taskPriority">
+                                                <!-- Leave Clear for population -->
+                                            </select>
+                                            <label for="taskPriority">Priority:</label>
                                         </div>
                                         <div class="row">
                                             <div class="col">
                                                 <div class="form-floating mb-3">
-                                                    <input type="text" class="form-control" id="task-assignee" name="taskAssignee">
-                                                    <label for="taskAssignee">Assigned To:</label>
+                                                    <select class="form-select" id="task-assignee" name="assigneeId">
+                                                        <!-- Options will be dynamically added here -->
+                                                    </select>
+                                                    <label for="assigneeId">Assigned To:</label>
                                                 </div>
                                             </div>
                                             <div class="col">
@@ -134,23 +141,32 @@ $(document).ready(function () {
         paging: true,
     });
 
+    
     $('#tasks-table tbody').on('click', '.clickable-row', function () {
         const taskData = $(this).data();
+        console.log("Clicked task data:", taskData);
 
-        // Populate the modal fields; use .val() for inputs and .text() or .html() for others as needed
+        // Populate the modal fields with values from data attributes
         $('#task-id-display').text(taskData.taskId);
-        $('#modal-task-id').val(taskData.taskId); // Corrected from taskData.modaltaskId
+        $('#modal-task-id').val(taskData.taskId);
         $('#task-title').val(taskData.title);
-        $('#task-description').val(taskData.description); // Assuming you have inputs to display these
-        $('#task-status').val(taskData.status);
-        $('#task-priority').val(taskData.priority);
-        $('#task-assignee').val(taskData.assigneeName); // make sure you have `data-assignee-name` attribute
-        $('#task-reportername').val(taskData.reporterName); // and `data-reporter-name`
-        $('#task-duedate').val(taskData.dueDate); // and `data-due-date`
-        $('#date-stamp').val(taskData.createdAt); // and `data-created-at`
+        $('#task-description').val(taskData.description);
+        $('#task-assignee').val(taskData.assigneeName);
+        $('#task-reportername').val(taskData.reporterName);
+        $('#task-duedate').val(taskData.dueDate);
+        $('#date-stamp').val(taskData.createdAt);
 
-        // Load comments for this task
+        // Log the task status ID before calling loadTaskStatuses()
+        console.log("Task Status ID:", taskData.statusId);
+        console.log("Task Priority ID:", taskData.priorityId);
+        console.log("Task Assignee ID:", taskData.assigneeId);
+
+        // Load segments for this task
         loadComments(taskData.taskId);
+        loadTaskStatuses(taskData.statusId);
+        loadTaskPriorities(taskData.priorityId);
+        loadAssignees(taskData.assigneeId);
+
 
         // Set the taskId as a data attribute on the modal
         $('#task-details-modal').data('task-id', taskData.taskId);
@@ -158,6 +174,77 @@ $(document).ready(function () {
         // Show the modal
         $('#task-details-modal').modal('show');
     });
+
+
+
+
+    function loadTaskStatuses(taskStatusID) {
+        $.ajax({
+            url: '/get-task-statuses',
+            type: 'GET',
+            success: function(response) {
+                console.log("Received task statuses:", response);  // Log the response to see what we got back
+                var select = $('#task-status');
+                select.empty();  // Clear existing options
+                response.forEach(function(status) {
+                    var option = $('<option></option>').attr('value', status.id).text(status.status);
+                    if (status.id === taskStatusID) {
+                        option.prop('selected', true);  // Set selected option
+                    }
+                    select.append(option);
+                    console.log("Setting selected status value to:", option);
+                });
+            },
+            error: function(error) {
+                console.error('Error fetching task statuses:', error);
+            }
+        });
+    }
+
+    function loadTaskPriorities(taskPriorityID) {
+        $.ajax({
+            url: '/get-task-priorities',
+            type: 'GET',
+            success: function(response) {
+                console.log("Received task priority:", response);  // Log the response to see what we got back
+                var select = $('#task-priority');
+                select.empty();  // Clear existing options
+                response.forEach(function(priority) {
+                    var option = $('<option></option>').attr('value', priority.id).text(priority.priority);
+                    if (priority.id === taskPriorityID) {
+                        option.prop('selected', true);  // Set selected option
+                    }
+                    select.append(option);
+                    console.log("Setting selected priority value to:", option);
+                });
+            },
+            error: function(error) {
+                console.error('Error fetching task priority:', error);
+            }
+        });
+    }
+
+    function loadAssignees(selectedAssigneeId = '') {
+        $.ajax({
+            url: '/get-employees',
+            type: 'GET',
+            success: function(response) {
+                console.log("Received assignees:", response);  // Log for debugging
+                var select = $('#task-assignee');
+                select.empty();  // Clear existing options
+                response.forEach(function(employee) {
+                    var option = $('<option></option>').attr('value', employee.id).text(employee.name);
+                    if (employee.id.toString() === selectedAssigneeId.toString()) {
+                        option.prop('selected', true);  // Set selected option if it matches
+                    }
+                    select.append(option);
+                });
+            },
+            error: function(error) {
+                console.error('Error fetching assignees:', error);
+            }
+        });
+    }
 
     function loadComments(taskId) {
         console.log("Loading comments for task ID:", taskId); // Debugging
@@ -240,6 +327,7 @@ $(document).ready(function () {
             }
         });
     });
+
 });
 </script>
 
