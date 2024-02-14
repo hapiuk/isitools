@@ -6,7 +6,6 @@
             <tr>
                 <th>Task Number</th>
                 <th>Subject</th>
-                <th>Description</th>
                 <th>Status</th>
                 <th>Priority</th>
                 <th>Assignee</th>
@@ -31,11 +30,9 @@
                 data-created-at="{{ task.created_at }}">
                 <td>{{ task.id }}</td>
                 <td>{{ task.title }}</td>
-                <td>{{ task.description }}</td>
                 <td>{{ task.status }}</td> 
                 <td>{{ task.priority_name }}</td>
                 <td>{{ task.assignee_name }}</td>
-
                 <td>{{ task.due_date }}</td>
             </tr>
             {% endfor %}
@@ -45,7 +42,6 @@
                 <th>
                     <button type="button" data-bs-toggle="modal" data-bs-target="#add-task-modal" class="btn btn-primary">Create Task</button>
                 </th>
-                <th></th>
                 <th></th>
                 <th></th>
                 <th></th>
