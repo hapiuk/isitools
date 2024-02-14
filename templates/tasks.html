@@ -78,8 +78,8 @@
                                             <label for="taskTitle">Subject:</label>
                                         </div>
                                         <div class="form-floating mb-3">
-                                            <input type="text" class="form-control" id="task-description" name="taskDescription">
-                                            <label for="deviceType">Description:</label>
+                                            <textarea class="form-control" id="task-description" name="taskDescription" rows="4"></textarea>
+                                            <label for="taskDescription">Description:</label>
                                         </div>
                                         <div class="form-floating mb-3">
                                             <select class="form-select" id="task-status" name="taskStatus">
@@ -128,8 +128,14 @@
                             <form id="add-comment-form">
                                 <input type="hidden" id="comment-task-id" name="task_id">
                                 <div class="form-floating mb-3">
+                                    <select class="form-select" id="comment-employee-id" name="employee_id">
+                                        <!-- Employee options will be dynamically added here -->
+                                    </select>
+                                    <label for="comment-employee-id">Comment As:</label>
+                                </div>
+                                <div class="form-floating mb-3">
                                     <textarea class="form-control" id="comment-text" placeholder="Add new comment..." name="comment-text" rows="3"></textarea>
-                                    <label for="comment-text" class="form-label">New Comment</label>
+                                    <label for="comment-text">New Comment</label>
                                 </div>
                                 <button type="submit" class="btn btn-primary" style="width: 100%;">Submit Comment</button>
                             </form>
@@ -392,6 +398,30 @@ $(document).ready(function () {
         });
     }
 
+    function loadEmployees() {
+        $.ajax({
+            url: '/get-employees', // Adjust this URL to your endpoint for fetching employees
+            type: 'GET',
+            success: function(response) {
+                var select = $('#comment-employee-id');
+                select.empty(); // Clear existing options
+                response.forEach(function(employee) {
+                    var option = $('<option></option>').attr('value', employee.id).text(employee.name);
+                    select.append(option);
+                });
+            },
+            error: function(error) {
+                console.error('Error fetching employees:', error);
+            }
+        });
+    }
+
+    // Call loadEmployees when the document is ready or when the modal opens
+    $(document).ready(function() {
+        loadEmployees(); // If the dropdown should be populated when the page loads
+    });
+
+
     function loadComments(taskId) {
         console.log("Loading comments for task ID:", taskId); // Debugging
         $.ajax({
@@ -421,8 +451,9 @@ $(document).ready(function () {
 
     $('#add-comment-form').submit(function(e) {
         e.preventDefault();
-        const taskId = $('#task-details-modal').data('task-id'); // This should now correctly get the taskId
+        const taskId = $('#task-details-modal').data('task-id'); // Assuming this is correct
         const commentText = $('#comment-text').val();
+        const employeeId = $('#comment-employee-id').val(); // Make sure this line correctly retrieves the selected employee ID
 
         $.ajax({
             url: '/add-comment',
@@ -430,17 +461,21 @@ $(document).ready(function () {
             data: JSON.stringify({
                 'task_id': taskId,
                 'comment': commentText,
+                'commenter_id': employeeId, // Ensure this is correctly sent
             }),
             contentType: 'application/json; charset=utf-8',
             success: function(response) {
-                $('#comment-text').val('');
-                loadComments(taskId);
+                // Handle success
+                $('#comment-text').val(''); // Clear the textarea
+                loadComments(taskId); // Reload or refresh comments to show the new one
             },
             error: function(error) {
                 console.error('Error adding comment:', error);
+                // Handle error
             }
         });
     });
+
 
     $('#update-task-form').submit(function(e) {
         e.preventDefault(); // Prevent the default form submission behavior
