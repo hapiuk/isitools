@@ -374,10 +374,12 @@ body {
 .profile-item {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 0; /* Remove gap between input and button */
     margin-bottom: 15px;
     position: relative;
+    width: 100%; /* Ensure the entire width is utilized */
 }
+
 
 .profile-item[title]::after {
     content: attr(title);
@@ -422,8 +424,9 @@ body {
     cursor: pointer;
 }
 
+/* Save Button Styling */
 .save-button {
-    flex: 1;
+    width: auto; /* Auto width to fit with input */
     padding: 10px;
     font-size: 16px;
     background-color: #ddd;
@@ -432,6 +435,9 @@ body {
     cursor: not-allowed;
     border-radius: 0; /* Square edges */
     transition: background-color 0.3s ease;
+    margin-left: -1px; /* Negative margin to remove any gap */
+    flex-shrink: 0; /* Prevent button from shrinking */
+    margin-top: -15px; /* Bring button up slightly */
 }
 
 .save-button.active {
@@ -443,7 +449,6 @@ body {
     background-color: #ddd; /* Grey when disabled */
     cursor: not-allowed;
 }
-
 
 
 /* Form Styling */
