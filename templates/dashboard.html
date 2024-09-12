@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="static/css/styles.css">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <img src="static/images/logos/WhiteLogo.png" alt="Logo" class="navbar-logo">
+        <div class="user-menu">
+            <button class="user-button">Username ▼</button>
+            <div class="dropdown-menu">
+                <a href="/profile">My Profile</a>
+                <a href="/logout">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Dashboard Content -->
+    <div class="dashboard-container">
+        <!-- PUWER Block -->
+        <div class="dashboard-block puwer-block">
+            <div class="main-area title-block">
+                <img src="static/images/icons/PUWER.png" alt="PUWER" class="block-icon">
+                <span>PUWER Reporting</span>
+            </div>
+            <button class="cut-square aecom-button" onclick="openModal('aecomModal')">AECOM</button>
+            <button class="cut-square general-button" onclick="openModal('generalModal')">General</button>
+        </div>
+
+        <!-- LOLER Block -->
+        <div class="dashboard-block loler-block">
+            <div class="main-area title-block">
+                <img src="static/images/icons/LOLER.png" alt="LOLER" class="block-icon">
+                <span>LOLER Reporting</span>
+            </div>
+            <button class="cut-square invisible-button"></button> <!-- Invisible button to maintain block size -->
+            <button class="cut-square general-button" onclick="openModal('lolerGeneralModal')">General</button>
+        </div>
+
+        <!-- Links Panel at the Bottom -->
+        <div class="dashboard-block links-panel">
+            <a href="https://example.com/digital-reporting" target="_blank" class="cut-square link-button">
+                <img src="static/images/icons/placeholder.png" alt="Digital Reporting System">
+            </a>
+            <a href="https://example.com/mdm" target="_blank" class="cut-square link-button">
+                <img src="static/images/icons/placeholder.png" alt="MDM">
+            </a>
+            <a href="https://example.com/microsoft-admin" target="_blank" class="cut-square link-button">
+                <img src="static/images/icons/placeholder.png" alt="Microsoft Admin Center">
+            </a>
+            <button class="cut-square settings-button" onclick="openModal('settingsModal')">
+                <img src="static/images/icons/settings-cog.png" alt="System Settings">
+            </button>
+        </div>
+
+        <!-- Modals -->
+        <div id="aecomModal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closeModal('aecomModal')">&times;</span>
+                <p>AECOM Modal Content</p>
+            </div>
+        </div>
+
+        <div id="generalModal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closeModal('generalModal')">&times;</span>
+                <p>General Modal Content for PUWER</p>
+            </div>
+        </div>
+
+        <div id="lolerGeneralModal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closeModal('lolerGeneralModal')">&times;</span>
+                <p>General Modal Content for LOLER</p>
+            </div>
+        </div>
+
+        <div id="settingsModal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closeModal('settingsModal')">&times;</span>
+                <p>System Settings Modal Content</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Function to open a modal
+        function openModal(modalId) {
+            document.getElementById(modalId).style.display = 'flex';
+        }
+
+        // Function to close a modal
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        // Dropdown menu toggle
+        document.querySelector('.user-button').addEventListener('click', function() {
+            document.querySelector('.dropdown-menu').classList.toggle('show');
+        });
+    </script>
+</body>
+</html>

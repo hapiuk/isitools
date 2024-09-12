@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <link rel="stylesheet" href="static/css/login.css">
+</head>
+<body class="login-body">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="flash-container">
+                {% for category, message in messages %}
+                    <div class="flash-message {{ category }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <div class="login-container">
+        <img src="static/images/logos/Logo.png" alt="Logo" class="logo">
+        <form action="/login" method="POST" class="login-form">
+            <input type="text" name="username" placeholder="Username" class="input-box">
+            <input type="password" name="password" placeholder="Password" class="input-box">
+            <a href="/forgot-username" class="forgot-link">Forgot Username?</a>
+            <button type="submit" class="login-button">Login</button>
+        </form>
+        <div class="debug-buttons">
+            <a href="{{ url_for('test_flash') }}" class="debug-button">Test Flash Message</a>
+            <a href="{{ url_for('test_error') }}" class="debug-button">Test Error Message</a>
+        </div>
+    </div>
+</body>
+</html>

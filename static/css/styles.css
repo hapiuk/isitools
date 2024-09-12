@@ -1,0 +1,296 @@
+/* General Styling */
+body {
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+    background-color: #f0f0f0; /* Slightly dimmer white */
+}
+
+.login-body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: #e8e8e8; /* Slightly dimmer white */
+}
+
+.login-container {
+    text-align: center;
+    background-color: #ffffff;
+    padding: 40px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.logo {
+    max-width: 150px;
+    margin-bottom: 20px;
+}
+
+.input-box {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    margin: 10px 0;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 16px;
+}
+
+.forgot-link {
+    display: block;
+    margin: 10px 0;
+    font-size: 14px;
+    color: #0F70B7;
+    text-decoration: none;
+}
+
+.forgot-link:hover {
+    text-decoration: underline;
+}
+
+.login-button {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    background-color: #0F70B7;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.login-button:hover {
+    background-color: #0D5A94;
+}
+
+/* Flash message styling */
+.flash-message {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    padding: 15px;
+    text-align: center;
+    color: white;
+    font-weight: bold;
+    z-index: 1000;
+}
+
+.flash-message.info {
+    background-color: #0F70B7;
+}
+
+.flash-message.error {
+    background-color: #e74c3c;
+}
+
+/* Debug button styling */
+.debug-buttons {
+    margin-top: 20px;
+}
+
+.debug-button {
+    display: inline-block;
+    margin: 5px;
+    padding: 10px 20px;
+    background-color: #FCBF00;
+    color: #fff;
+    text-decoration: none;
+    border-radius: 4px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.debug-button:hover {
+    background-color: #e6ac00;
+}
+
+/* Navbar Styling */
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    background-color: #0F70B7;
+    color: white;
+}
+
+.navbar-logo {
+    max-height: 40px;
+}
+
+.user-menu {
+    position: relative;
+}
+
+.user-button {
+    background-color: transparent;
+    border: none;
+    color: white;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.dropdown-menu {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: 100%;
+    background-color: white;
+    border: 1px solid #ddd;
+    overflow: hidden;
+}
+
+.dropdown-menu.show {
+    display: block;
+}
+
+.dropdown-menu a {
+    display: block;
+    padding: 10px 20px;
+    color: #333;
+    text-decoration: none;
+}
+
+.dropdown-menu a:hover {
+    background-color: #f0f0f0;
+}
+
+/* Dashboard Container Styling */
+.dashboard-container {
+    width: 60%;
+    margin: 20px auto;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    padding: 20px;
+}
+
+/* Dashboard Block Styling */
+.dashboard-block {
+    display: flex;
+    align-items: stretch;
+    background-color: #d0d0d0; /* Gray background */
+    width: 100%;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    font-size: 3em;
+}
+
+.title-block {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 175px; /* Consistent height for all title blocks */
+}
+
+.block-icon {
+    margin-right: 5%;
+}
+
+.cut-square {
+    width: 175px;
+    height: 175px;
+    border: none;
+    font-size: 16px;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: background-color 0.3s ease;
+}
+
+.invisible-button {
+    background-color: transparent;
+    pointer-events: none; /* To maintain layout without interaction */
+}
+
+/* Specific Button Styles */
+.aecom-button {
+    background-color: #D9534F; /* Reddish color fitting the theme */
+}
+
+.aecom-button:hover {
+    background-color: #c94440;
+}
+
+.general-button {
+    background-color: #0F70B7; /* Blue color fitting the theme */
+}
+
+.general-button:hover {
+    background-color: #0D5A94;
+}
+
+/* Links Panel Styling */
+.links-panel {
+    display: flex;
+    gap: 0;
+    justify-content: space-between;
+}
+
+.link-button {
+    flex: 1;
+    height: 175px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #0F70B7; /* Blue for external links */
+    color: white;
+    text-align: center;
+    border: none;
+    transition: background-color 0.3s ease;
+}
+
+.link-button:hover {
+    background-color: #0D5A94;
+}
+
+.settings-button {
+    flex: 1;
+    height: 175px;
+    background-color: #d0d0d0; /* Gray for settings button */
+    color: white;
+    text-align: center;
+    border: none;
+    transition: background-color 0.3s ease;
+}
+
+.settings-button:hover {
+    background-color: #b0b0b0;
+}
+
+/* Modal Styling */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-content {
+    background-color: white;
+    padding: 20px;
+    width: 80%;
+    max-width: 500px;
+    position: relative;
+}
+
+.close {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 24px;
+    cursor: pointer;
+}
