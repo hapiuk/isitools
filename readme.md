@@ -11,7 +11,7 @@ This project is a web-based UI designed for Industrial Safety Inspections (ISI),
 - **User Management:** View, create, and delete system users with an intuitive interface. User details include First Name, Last Name, Email, Department, Location, and Access Level (Admin/User).
 - **Contact Management:** Manage system contacts with easy-to-use search and pagination features. Contacts include First Name, Last Name, Email, and Contact Number.
 - **Email Settings:** Configure mail server settings including Mail Server, Port, Username, Password, TLS/SSL options, Default Sender Name, and Email.
-- **Report Processing:** Process and view reports for PUWER, LOLER, and AECOM, with functionalities to upload files, process data, and view historic reports.
+- **Report Processing:** Process and view reports for PUWER, LOLER, and Custom Client Reports, with functionalities to upload files, process data, and view historic reports.
 - **System Settings:** Access system configurations through settings for users, contacts, and mail settings, all presented in a consistent modal format.
 - **Flash Messages:** Provides feedback and error handling through dismissible flash messages, styled to fit within the application theme.
 - **Responsive Design:** Consistent look and feel across devices, with a footer that remains fixed at the bottom of the viewport.
