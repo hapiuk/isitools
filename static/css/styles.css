@@ -162,7 +162,7 @@ body {
 /* Dashboard Container Styling */
 .dashboard-container {
     width: 60%;
-    margin: 10% auto 0 auto; /* Updated top margin to 10% */
+    margin: 5% auto 0 auto; /* Updated top margin to 10% */
     display: flex;
     flex-direction: column;
     gap: 20px;
@@ -349,25 +349,50 @@ body {
     top: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
+    background-color: rgba(0, 0, 0, 0.6); /* Darker background for more emphasis */
     justify-content: center;
     align-items: center;
 }
 
+/* Modal Content Styling */
 .modal-content {
-    background-color: white;
-    padding: 20px;
-    width: 50%;
-    max-height: 75vh; /* Reduced max-height to avoid overflow */
-    overflow: hidden; /* Prevent scrollbars */
+    background-color: #ffffff; /* Clean white background */
+    padding: 30px; /* More padding for a spacious look */
+    width: 40%; /* Slightly narrower for a sleek appearance */
+    max-height: 75vh; /* Restrict max height for better fit */
+    overflow-y: auto; /* Allow scrolling if content overflows */
     position: relative;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    border: none;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15); /* Softer shadow for a lifted effect */
+    border: 1px solid #ddd; /* Light border for definition */
+    text-align: center; /* Center text for a clean layout */
+    transition: all 0.3s ease; /* Smooth transition for better UX */
 }
 
+
+/* Modal Heading */
 .modal-content h2 {
     margin-top: 0;
-    margin-bottom: 20px;
+    font-size: 22px; /* Larger font for emphasis */
+    color: #333; /* Darker color for better readability */
+}
+
+/* Paragraph Styling */
+.modal-content p {
+    font-size: 16px;
+    line-height: 1.6; /* Increased line height for better readability */
+    color: #555; /* Softer text color */
+    margin-bottom: 20px; /* Space below paragraphs */
+}
+
+.modal-content a {
+    color: #0F70B7; /* Blue for links to match theme */
+    text-decoration: none;
+    font-weight: bold; /* Bold to highlight links */
+    transition: color 0.3s ease;
+}
+
+.modal-content a:hover {
+    color: #0D5A94; /* Darker blue on hover */
 }
 
 /* Profile Item Styling */
@@ -804,7 +829,14 @@ body {
     right: 15px;
     font-size: 24px;
     cursor: pointer;
-    color: #333;
+    color: #555; /* Subtle, neutral color */
+    background: none; /* Remove background */
+    border: none; /* Remove border */
+    transition: color 0.3s ease;
+}
+
+.close:hover {
+    color: #333; /* Slightly darker on hover */
 }
 
 /* Modal Button Styling */
