@@ -32,13 +32,13 @@ To set up the project locally:
 1. Clone the repository:
 
     ```bash
-    git clone https://github.com/yourusername/isi-ui.git
+    git clone https://github.com/hapiuk/isitools.git
     ```
 
 2. Navigate into the project directory:
 
     ```bash
-    cd isi-ui
+    cd isitools
     ```
 
 3. Install the required dependencies:
