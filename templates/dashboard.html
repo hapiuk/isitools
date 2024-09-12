@@ -12,13 +12,25 @@
     <nav class="navbar">
         <img src="static/images/logos/WhiteLogo.png" alt="Logo" class="navbar-logo">
         <div class="user-menu">
-            <button class="user-button">Username ▼</button>
+            <button class="user-button">Firstname Lastname</button>
             <div class="dropdown-menu">
-                <a href="/profile">My Profile</a>
-                <a href="/logout">Logout</a>
+                <a href="#" onclick="openModal('profileModal')">My Profile</a>
+                <a href="/logout" class="logout-link">Logout</a> <!-- Updated with red hue styling -->
             </div>
         </div>
     </nav>
+
+    <!-- Example Flash Message Block -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="flash-message {{ category }}">
+                    <span>{{ message }}</span>
+                    <button class="dismiss-btn" onclick="dismissFlashMessage()">×</button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
 
     <!-- Dashboard Content -->
     <div class="dashboard-container">
@@ -28,8 +40,12 @@
                 <img src="static/images/icons/PUWER.png" alt="PUWER" class="block-icon">
                 <span>PUWER Reporting</span>
             </div>
-            <button class="cut-square aecom-button" onclick="openModal('aecomModal')">AECOM</button>
-            <button class="cut-square general-button" onclick="openModal('generalModal')">General</button>
+            <button class="cut-square aecom-button" onclick="openModal('aecomModal')" data-tooltip="AECOM">
+                <img src="static/images/icons/AECOM.png" alt="AECOM">
+            </button>
+            <button class="cut-square general-button" onclick="openModal('puwerModal')" data-tooltip="General">
+                <img src="static/images/icons/processpdfexcel.png" alt="General">
+            </button>
         </div>
 
         <!-- LOLER Block -->
@@ -38,23 +54,25 @@
                 <img src="static/images/icons/LOLER.png" alt="LOLER" class="block-icon">
                 <span>LOLER Reporting</span>
             </div>
-            <button class="cut-square invisible-button"></button> <!-- Invisible button to maintain block size -->
-            <button class="cut-square general-button" onclick="openModal('lolerGeneralModal')">General</button>
+            <button class="cut-square invisible-button"></button> <!-- Invisible button to maintain layout -->
+            <button class="cut-square general-button" onclick="openModal('lolerModal')" data-tooltip="General">
+                <img src="static/images/icons/processpdfexcel.png" alt="General">
+            </button>
         </div>
 
         <!-- Links Panel at the Bottom -->
         <div class="dashboard-block links-panel">
-            <a href="https://example.com/digital-reporting" target="_blank" class="cut-square link-button">
-                <img src="static/images/icons/placeholder.png" alt="Digital Reporting System">
+            <a href="https://live.servicesight.com" target="_blank" class="cut-square link-button" data-tooltip="Digital Reporting System">
+                <img src="static/images/icons/reporting.png" alt="Digital Reporting System">
             </a>
-            <a href="https://example.com/mdm" target="_blank" class="cut-square link-button">
-                <img src="static/images/icons/placeholder.png" alt="MDM">
+            <a href="https://central.samsungknox.com/login-navigator" target="_blank" class="cut-square link-button" data-tooltip="MDM">
+                <img src="static/images/icons/mdm.png" alt="MDM">
             </a>
-            <a href="https://example.com/microsoft-admin" target="_blank" class="cut-square link-button">
-                <img src="static/images/icons/placeholder.png" alt="Microsoft Admin Center">
+            <a href="https://admin.microsoft.com" target="_blank" class="cut-square link-button" data-tooltip="Microsoft Admin Center">
+                <img src="static/images/icons/admin-center.png" alt="Microsoft Admin Center">
             </a>
-            <button class="cut-square settings-button" onclick="openModal('settingsModal')">
-                <img src="static/images/icons/settings-cog.png" alt="System Settings">
+            <button class="dashboard-settings-button" onclick="openModal('settingsModal')" data-tooltip="System Settings">
+                <img src="static/images/icons/cog-settings.svg" alt="System Settings">
             </button>
         </div>
 
@@ -62,47 +80,407 @@
         <div id="aecomModal" class="modal">
             <div class="modal-content">
                 <span class="close" onclick="closeModal('aecomModal')">&times;</span>
-                <p>AECOM Modal Content</p>
+                <h2>Process AECOM Reports</h2>
+                <form class="modal-form">
+                    <input type="text" placeholder="Business Entity" class="form-input">
+                    <div class="file-upload">
+                        <button type="button" class="upload-button">Upload</button>
+                        <span class="file-count">0 files selected</span>
+                    </div>
+                    <button type="submit" class="process-button">Process Reports</button>
+                </form>
+                <button type="button" class="view-historic-button" onclick="openModal('historicReportsModal')">View Historic Reports</button>
             </div>
         </div>
 
-        <div id="generalModal" class="modal">
+        <!-- General PUWER Modal -->
+        <div id="puwerModal" class="modal">
             <div class="modal-content">
-                <span class="close" onclick="closeModal('generalModal')">&times;</span>
-                <p>General Modal Content for PUWER</p>
+                <span class="close" onclick="closeModal('puwerModal')">&times;</span>
+                <h2>Process PUWER Reports</h2>
+                <form class="modal-form">
+                    <input type="text" placeholder="Site Name" class="form-input">
+                    <div class="file-upload">
+                        <button type="button" class="upload-button">Upload</button>
+                        <span class="file-count">0 files selected</span>
+                    </div>
+                    <button type="submit" class="process-button">Process Reports</button>
+                </form>
+                <button type="button" class="view-historic-button" onclick="openModal('puwerHistoricReportsModal')">View Historic Reports</button>
             </div>
         </div>
 
-        <div id="lolerGeneralModal" class="modal">
+        <!-- General LOLER Modal -->
+        <div id="lolerModal" class="modal">
             <div class="modal-content">
-                <span class="close" onclick="closeModal('lolerGeneralModal')">&times;</span>
-                <p>General Modal Content for LOLER</p>
+                <span class="close" onclick="closeModal('lolerModal')">&times;</span>
+                <h2>Process LOLER Reports</h2>
+                <form class="modal-form">
+                    <input type="text" placeholder="Site Name" class="form-input">
+                    <div class="file-upload">
+                        <button type="button" class="upload-button">Upload</button>
+                        <span class="file-count">0 files selected</span>
+                    </div>
+                    <button type="submit" class="process-button">Process Reports</button>
+                </form>
+                <button type="button" class="view-historic-button" onclick="openModal('lolerHistoricReportsModal')">View Historic Reports</button>
             </div>
         </div>
 
+        <!-- Historic Reports Modals -->
+        <div id="historicReportsModal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closeModal('historicReportsModal')">&times;</span>
+                <h2>AECOM Reports</h2>
+                <input type="text" id="searchInput" placeholder="Search reports..." class="form-input">
+                <div class="table-container">
+                    <table class="reports-table">
+                        <thead>
+                            <tr>
+                                <th>Site Name</th>
+                                <th>Items Inspected</th>
+                                <th>Visit Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="aecomReportsTableBody">
+                            <tr>
+                                <td>Site 1</td>
+                                <td>15</td>
+                                <td>2023-09-01</td>
+                                <td>
+                                    <button class="download-button">Download</button>
+                                    <button class="delete-button" onclick="showDeleteConfirm(1, 'aecom')">Delete</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="puwerHistoricReportsModal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closeModal('puwerHistoricReportsModal')">&times;</span>
+                <h2>PUWER Reports</h2>
+                <input type="text" id="puwerSearchInput" placeholder="Search reports..." class="form-input">
+                <div class="table-container">
+                    <table class="reports-table">
+                        <thead>
+                            <tr>
+                                <th>Site Name</th>
+                                <th>Items Inspected</th>
+                                <th>Visit Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="puwerReportsTableBody">
+                            <tr>
+                                <td>Site 1</td>
+                                <td>20</td>
+                                <td>2023-09-02</td>
+                                <td>
+                                    <button class="download-button">Download</button>
+                                    <button class="delete-button" onclick="showDeleteConfirm(1, 'puwer')">Delete</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="lolerHistoricReportsModal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closeModal('lolerHistoricReportsModal')">&times;</span>
+                <h2>LOLER Reports</h2>
+                <input type="text" id="lolerSearchInput" placeholder="Search reports..." class="form-input">
+                <div class="table-container">
+                    <table class="reports-table">
+                        <thead>
+                            <tr>
+                                <th>Site Name</th>
+                                <th>Items Inspected</th>
+                                <th>Visit Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="lolerReportsTableBody">
+                            <tr>
+                                <td>Site 1</td>
+                                <td>30</td>
+                                <td>2023-09-03</td>
+                                <td>
+                                    <button class="download-button">Download</button>
+                                    <button class="delete-button" onclick="showDeleteConfirm(1, 'loler')">Delete</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Delete Confirmation Modal -->
+        <div id="deleteConfirmModal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closeModal('deleteConfirmModal')">&times;</span>
+                <h2>Type "Delete" to confirm</h2>
+                <div class="delete-challenge">
+                    <input type="text" id="deleteInput" class="delete-input" placeholder="Type Delete">
+                    <button class="delete-confirm-button" id="confirmDeleteButton" disabled>Delete</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Settings Modal -->
         <div id="settingsModal" class="modal">
             <div class="modal-content">
                 <span class="close" onclick="closeModal('settingsModal')">&times;</span>
-                <p>System Settings Modal Content</p>
+                <h2>System Settings</h2>
+                <div class="settings-block">
+                    <button class="settings-modal-button" onclick="openModal('systemUsersModal')" data-tooltip="System Users">
+                        <img src="static/images/icons/users.png" alt="System Users">
+                    </button>
+                    <button class="settings-modal-button" onclick="openModal('systemContactsModal')" data-tooltip="System Contacts">
+                        <img src="static/images/icons/contacts.png" alt="System Contacts">
+                    </button>
+                    <button class="settings-modal-button" onclick="openModal('mailSettingsModal')" data-tooltip="Mail Settings">
+                        <img src="static/images/icons/mailsettings.png" alt="Mail Settings">
+                    </button>
+                </div>
             </div>
         </div>
-    </div>
 
-    <script>
-        // Function to open a modal
-        function openModal(modalId) {
-            document.getElementById(modalId).style.display = 'flex';
-        }
+        <!-- System Users Modal -->
+        <div id="systemUsersModal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closeModal('systemUsersModal')">&times;</span>
+                <h2>System Users</h2>
+                <!-- Search Input -->
+                <input type="text" id="userSearchInput" class="profile-input" placeholder="Search users...">
+                <!-- User Table -->
+                <div class="table-container">
+                    <table class="users-table">
+                        <thead>
+                            <tr>
+                                <th>First Name</th>
+                                <th>Last Name</th>
+                                <th>Email Address</th>
+                                <th>Department</th>
+                                <th>Location</th>
+                                <th>Access Level</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTableBody">
+                            <!-- Dummy Data Row for Current User -->
+                            <tr>
+                                <td>John</td>
+                                <td>Doe</td>
+                                <td>admin@example.com</td>
+                                <td>IT</td>
+                                <td>Head Office</td>
+                                <td>Admin</td>
+                                <td>
+                                    <button class="delete-button" onclick="showDeleteConfirm(1, 'user')">Delete</button>
+                                </td>
+                            </tr>
+                            <!-- Additional dummy rows can be added here -->
+                        </tbody>
+                    </table>
+                </div>
+                <!-- Pagination Controls -->
+                <div class="pagination">
+                    <button class="page-button previous-button" onclick="changePage(-1, 'user')">Previous</button>
+                    <span id="userPageNumber">1</span>
+                    <button class="page-button next-button" onclick="changePage(1, 'user')">Next</button>
+                </div>
+                <!-- Create User Button -->
+                <button class="create-user-button" onclick="openModal('createUserModal')">Create User</button>
+            </div>
+        </div>
 
-        // Function to close a modal
-        function closeModal(modalId) {
-            document.getElementById(modalId).style.display = 'none';
-        }
+        <!-- Create User Modal -->
+        <div id="createUserModal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closeModal('createUserModal')">&times;</span>
+                <h2>Create New User</h2>
+                <form class="modal-form">
+                    <input type="text" id="newFirstName" class="profile-input" placeholder="First Name">
+                    <input type="text" id="newLastName" class="profile-input" placeholder="Last Name">
+                    <input type="text" id="newEmail" class="profile-input" placeholder="Email Address">
+                    <input type="text" id="newDepartment" class="profile-input" placeholder="Department">
+                    <input type="text" id="newLocation" class="profile-input" placeholder="Location">
+                    <!-- Access Level Dropdown -->
+                    <select id="newAccessLevel" class="profile-input">
+                        <option value="Admin">Admin</option>
+                        <option value="User">User</option>
+                    </select>
+                    <button type="submit" class="modal-button">Create User</button>
+                </form>
+            </div>
+        </div>
 
-        // Dropdown menu toggle
-        document.querySelector('.user-button').addEventListener('click', function() {
-            document.querySelector('.dropdown-menu').classList.toggle('show');
-        });
-    </script>
-</body>
+        <!-- Delete Confirmation Modal for User Deletion -->
+        <div id="deleteConfirmModalUser" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closeModal('deleteConfirmModalUser')">&times;</span>
+                <h2>Type "Delete" to confirm</h2>
+                <div class="delete-challenge">
+                    <input type="text" id="deleteInputUser" class="delete-input" placeholder="Type Delete">
+                    <button class="delete-confirm-button" id="confirmDeleteButtonUser" disabled>Delete</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Contacts Modal -->
+        <div id="systemContactsModal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closeModal('systemContactsModal')">&times;</span>
+                <h2>System Contacts</h2>
+                <!-- Search Input -->
+                <input type="text" id="contactSearchInput" class="profile-input" placeholder="Search contacts...">
+                <!-- Contacts Table -->
+                <div class="table-container">
+                    <table class="contacts-table">
+                        <thead>
+                            <tr>
+                                <th>First Name</th>
+                                <th>Last Name</th>
+                                <th>Email Address</th>
+                                <th>Contact Number</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="contactsTableBody">
+                            <!-- Dummy Data Row for Current Contact -->
+                            <tr>
+                                <td>Jane</td>
+                                <td>Doe</td>
+                                <td>jane.doe@example.com</td>
+                                <td>+123456789</td>
+                                <td>
+                                    <button class="delete-button" onclick="showDeleteConfirm(1, 'contact')">Delete</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <!-- Pagination Controls -->
+                <div class="pagination">
+                    <button class="page-button previous-button" onclick="changePage(-1, 'contact')">Previous</button>
+                    <span id="contactPageNumber">1</span>
+                    <button class="page-button next-button" onclick="changePage(1, 'contact')">Next</button>
+                </div>
+                <!-- Create Contact Button -->
+                <button class="create-contact-button" onclick="openModal('createContactModal')">Create Contact</button>
+            </div>
+        </div>
+
+        <!-- Create Contact Modal -->
+        <div id="createContactModal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closeModal('createContactModal')">&times;</span>
+                <h2>Create New Contact</h2>
+                <form class="modal-form">
+                    <input type="text" id="newContactFirstName" class="profile-input" placeholder="First Name">
+                    <input type="text" id="newContactLastName" class="profile-input" placeholder="Last Name">
+                    <input type="text" id="newContactEmail" class="profile-input" placeholder="Email Address">
+                    <input type="text" id="newContactNumber" class="profile-input" placeholder="Contact Number">
+                    <button type="submit" class="modal-button">Create Contact</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Mail Settings Modal -->
+        <div id="mailSettingsModal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closeModal('mailSettingsModal')">&times;</span>
+                <h2>Email Settings</h2>
+                <form class="modal-form">
+                    <input type="text" id="mailServer" class="profile-input" placeholder="Mail Server" value="smtp.example.com">
+                    <input type="number" id="mailPort" class="profile-input" placeholder="Mail Port" value="587">
+                    <input type="text" id="emailUsername" class="profile-input" placeholder="Email Username" value="user@example.com">
+                    <input type="password" id="emailPassword" class="profile-input" placeholder="Email Password" value="password123">
+                    <select id="useTLS" class="profile-input">
+                        <option value="true" selected>Use TLS - True</option>
+                        <option value="false">Use TLS - False</option>
+                    </select>
+                    <select id="useSSL" class="profile-input">
+                        <option value="true">Use SSL - True</option>
+                        <option value="false" selected>Use SSL - False</option>
+                    </select>
+                    <input type="text" id="defaultSenderName" class="profile-input" placeholder="Default Sender Name" value="Admin">
+                    <input type="email" id="defaultSenderEmail" class="profile-input" placeholder="Default Sender Email" value="admin@example.com">
+                    <button type="submit" class="modal-button">Save Settings</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- My Profile Modal -->
+        <div id="profileModal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closeModal('profileModal')">&times;</span>
+                <h2>My Profile</h2>
+                <div class="profile-item">
+                    <input type="text" id="firstNameInput" class="profile-input" placeholder="First Name" value="John">
+                    <button class="save-button" id="saveFirstName" disabled>Save</button>
+                </div>
+                <div class="profile-item">
+                    <input type="text" id="lastNameInput" class="profile-input" placeholder="Last Name" value="Doe">
+                    <button class="save-button" id="saveLastName" disabled>Save</button>
+                </div>
+                <div class="profile-item">
+                    <input type="text" id="emailInput" class="profile-input" placeholder="Email" value="johndoe@example.com">
+                    <button class="save-button" id="saveEmail" disabled>Save</button>
+                </div>
+                <div class="profile-item">
+                    <input type="text" id="departmentInput" class="profile-input" placeholder="Department" value="IT">
+                    <button class="save-button" id="saveDepartment" disabled>Save</button>
+                </div>
+                <div class="profile-item">
+                    <input type="text" id="locationInput" class="profile-input" placeholder="Location" value="Head Office">
+                    <button class="save-button" id="saveLocation" disabled>Save</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>&copy; Industrial Safety Inspections and Aaron Gomm. UI designed by Aaron Gomm.</p>
+            <p>
+                <a href="#" onclick="openModal('disclaimerModal')">Disclaimer</a> |
+                <a href="#" onclick="openModal('contactModal')">Contact</a>
+            </p>
+        </footer>
+
+        <!-- Disclaimer Modal -->
+        <div id="disclaimerModal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closeModal('disclaimerModal')">&times;</span>
+                <h2>Disclaimer</h2>
+                <p>
+                    This UI was designed by Aaron Gomm during his tenure at Industrial Safety Inspections (ISI). 
+                    While the design is credited to Aaron Gomm, all scripts and functionality were developed during 
+                    company hours and are owned by ISI. Any inquiries for updates or modifications after Aaron's 
+                    departure in November can be directed to ISI.
+                </p>
+            </div>
+        </div>
+
+        <!-- Contact Modal -->
+        <div id="contactModal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closeModal('contactModal')">&times;</span>
+                <h2>Contact Aaron Gomm</h2>
+                <p>If you need further updates or modifications to the UI after my departure, please feel free to reach out:</p>
+                <ul>
+                    <li>Email: aaron.gomm@example.com</li> <!-- Update with actual contact info if preferred -->
+                    <li>LinkedIn: <a href="https://www.linkedin.com/in/aarongomm" target="_blank">Aaron Gomm</a></li>
+                </ul>
+            </div>
+        </div>
+        <script src="static/js/scripts.js"></script>
+    </body>
 </html>

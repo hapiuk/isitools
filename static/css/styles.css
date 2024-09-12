@@ -6,70 +6,10 @@ body {
     background-color: #f0f0f0; /* Slightly dimmer white */
 }
 
-.login-body {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    background-color: #e8e8e8; /* Slightly dimmer white */
-}
-
-.login-container {
-    text-align: center;
-    background-color: #ffffff;
-    padding: 40px;
-    border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-}
-
-.logo {
-    max-width: 150px;
-    margin-bottom: 20px;
-}
-
-.input-box {
-    display: block;
-    width: 100%;
-    padding: 10px;
-    margin: 10px 0;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 16px;
-}
-
-.forgot-link {
-    display: block;
-    margin: 10px 0;
-    font-size: 14px;
-    color: #0F70B7;
-    text-decoration: none;
-}
-
-.forgot-link:hover {
-    text-decoration: underline;
-}
-
-.login-button {
-    display: block;
-    width: 100%;
-    padding: 12px;
-    background-color: #0F70B7;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    font-size: 16px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-}
-
-.login-button:hover {
-    background-color: #0D5A94;
-}
-
-/* Flash message styling */
+/* Flash Message Styling */
 .flash-message {
     position: fixed;
-    top: 0;
+    top: 60px; /* Position just below the navbar */
     left: 0;
     right: 0;
     padding: 15px;
@@ -77,36 +17,37 @@ body {
     color: white;
     font-weight: bold;
     z-index: 1000;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
+/* Flash message types */
 .flash-message.info {
-    background-color: #0F70B7;
+    background-color: #28a745; /* Green for info */
 }
 
 .flash-message.error {
-    background-color: #e74c3c;
+    background-color: #e74c3c; /* Red for error */
 }
 
-/* Debug button styling */
-.debug-buttons {
-    margin-top: 20px;
+.flash-message.success {
+    background-color: #28a745; /* Green for success */
 }
 
-.debug-button {
-    display: inline-block;
-    margin: 5px;
-    padding: 10px 20px;
-    background-color: #FCBF00;
-    color: #fff;
-    text-decoration: none;
-    border-radius: 4px;
-    font-size: 14px;
+/* Dismiss button styling */
+.flash-message .dismiss-btn {
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 16px;
     cursor: pointer;
-    transition: background-color 0.3s ease;
+    margin-left: 10px;
 }
 
-.debug-button:hover {
-    background-color: #e6ac00;
+.flash-message .dismiss-btn:hover {
+    color: #ddd;
 }
 
 /* Navbar Styling */
@@ -114,25 +55,44 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 10px 20px;
+    padding: 0;
     background-color: #0F70B7;
     color: white;
+    height: 60px;
+    box-sizing: border-box;
 }
 
 .navbar-logo {
     max-height: 40px;
+    margin-left: 20px;
 }
 
 .user-menu {
     position: relative;
+    height: 100%;
+    margin-left: auto;
 }
 
 .user-button {
-    background-color: transparent;
+    background-color: #0C5C9E;
     border: none;
+    height: 100%;
+    width: 200px;
     color: white;
-    cursor: pointer;
     font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: background-color 0.3s ease;
+    text-align: center;
+    margin: 0;
+    padding: 0;
+}
+
+.user-button:hover {
+    background-color: #0A4D85;
 }
 
 .dropdown-menu {
@@ -143,6 +103,9 @@ body {
     background-color: white;
     border: 1px solid #ddd;
     overflow: hidden;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    width: 200px;
+    border-radius: 0 0 4px 4px;
 }
 
 .dropdown-menu.show {
@@ -154,16 +117,52 @@ body {
     padding: 10px 20px;
     color: #333;
     text-decoration: none;
+    transition: background-color 0.3s ease;
 }
 
 .dropdown-menu a:hover {
     background-color: #f0f0f0;
 }
 
+.logout-link {
+    color: #D9534F;
+    font-weight: bold;
+    transition: color 0.3s ease;
+}
+
+.logout-link:hover {
+    color: #c94440;
+}
+
+/* Dashboard Settings Button Styling */
+.dashboard-settings-button {
+    flex: 1;
+    background-color: #d0d0d0; /* Grey color similar to the bottom block */
+    color: white;
+    border: none;
+    cursor: pointer;
+    border-radius: 0; /* Square edges */
+    transition: background-color 0.3s ease;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 175px; /* Match the style from the bottom block */
+    width: 175px; /* Make it square */
+}
+
+.dashboard-settings-button img {
+    max-width: 60%;
+    max-height: 60%;
+}
+
+.dashboard-settings-button:hover {
+    background-color: #b0b0b0; /* Slightly darker grey on hover */
+}
+
 /* Dashboard Container Styling */
 .dashboard-container {
     width: 60%;
-    margin: 20px auto;
+    margin: 10% auto 0 auto; /* Updated top margin to 10% */
     display: flex;
     flex-direction: column;
     gap: 20px;
@@ -174,7 +173,7 @@ body {
 .dashboard-block {
     display: flex;
     align-items: stretch;
-    background-color: #d0d0d0; /* Gray background */
+    background-color: #d0d0d0;
     width: 100%;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     font-size: 3em;
@@ -183,15 +182,18 @@ body {
 .title-block {
     flex: 1;
     display: flex;
-    justify-content: center;
     align-items: center;
-    height: 175px; /* Consistent height for all title blocks */
+    padding-left: 12.5%;
+    height: 175px;
 }
 
 .block-icon {
-    margin-right: 5%;
+    max-width: 60%;
+    max-height: 60%;
+    margin-right: 10%;
 }
 
+/* Button Styles for Top and Bottom Panels */
 .cut-square {
     width: 175px;
     height: 175px;
@@ -203,16 +205,21 @@ body {
     justify-content: center;
     align-items: center;
     transition: background-color 0.3s ease;
+    position: relative;
+}
+
+.cut-square img {
+    max-width: 60%;
+    max-height: 60%;
 }
 
 .invisible-button {
     background-color: transparent;
-    pointer-events: none; /* To maintain layout without interaction */
+    pointer-events: none;
 }
 
-/* Specific Button Styles */
 .aecom-button {
-    background-color: #D9534F; /* Reddish color fitting the theme */
+    background-color: #D9534F;
 }
 
 .aecom-button:hover {
@@ -220,14 +227,13 @@ body {
 }
 
 .general-button {
-    background-color: #0F70B7; /* Blue color fitting the theme */
+    background-color: #0F70B7;
 }
 
 .general-button:hover {
     background-color: #0D5A94;
 }
 
-/* Links Panel Styling */
 .links-panel {
     display: flex;
     gap: 0;
@@ -240,7 +246,7 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    background-color: #0F70B7; /* Blue for external links */
+    background-color: #0F70B7;
     color: white;
     text-align: center;
     border: none;
@@ -251,18 +257,87 @@ body {
     background-color: #0D5A94;
 }
 
-.settings-button {
+/* Settings Modal Button Styling */
+.settings-modal-button {
     flex: 1;
-    height: 175px;
-    background-color: #d0d0d0; /* Gray for settings button */
+    aspect-ratio: 1 / 1; /* Make the button square */
+    background-color: #0F70B7; /* Blue color */
     color: white;
-    text-align: center;
     border: none;
+    cursor: pointer;
+    border-radius: 0; /* Square edges */
     transition: background-color 0.3s ease;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 150px; /* Slightly reduced height */
 }
 
-.settings-button:hover {
-    background-color: #b0b0b0;
+.settings-modal-button img {
+    max-width: 60%; /* Adjust the image size within the button */
+    max-height: 60%;
+}
+
+.settings-modal-button:hover {
+    background-color: #0D5A94;
+}
+
+/* Tooltip Styling */
+.settings-modal-button[data-tooltip]:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: -25px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #333;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 4px;
+    white-space: nowrap;
+    z-index: 10;
+    font-size: 12px;
+    opacity: 0.9;
+}
+
+.cut-square[data-tooltip]:hover:after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #333;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 4px;
+    white-space: nowrap;
+    z-index: 10;
+    font-size: 14px;
+}
+
+/* Footer Styling */
+.footer {
+    background-color: #d0d0d0; /* Soft grey for footer */
+    color: #333; /* Darker text for better readability */
+    text-align: center;
+    padding: 10px 20px;
+    position: fixed;
+    width: 100%; /* Ensure the footer fills the width of the viewport */
+    bottom: 0;
+    left: 0; /* Aligns the footer to the left */
+    box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.1);
+    font-size: 14px;
+    z-index: 1000; /* Ensures the footer is above other content */
+}
+
+.footer a {
+    color: #0F70B7; /* Blue to maintain theme */
+    text-decoration: none;
+    margin: 0 10px;
+}
+
+.footer a:hover {
+    text-decoration: underline;
 }
 
 /* Modal Styling */
@@ -282,15 +357,465 @@ body {
 .modal-content {
     background-color: white;
     padding: 20px;
-    width: 80%;
-    max-width: 500px;
+    width: 50%;
+    max-height: 75vh; /* Reduced max-height to avoid overflow */
+    overflow: hidden; /* Prevent scrollbars */
+    position: relative;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    border: none;
+}
+
+.modal-content h2 {
+    margin-top: 0;
+    margin-bottom: 20px;
+}
+
+/* Profile Item Styling */
+.profile-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
     position: relative;
 }
 
+.profile-item[title]::after {
+    content: attr(title);
+    position: absolute;
+    top: -25px;
+    left: 0;
+    font-size: 12px;
+    color: #666;
+    display: none; /* Hidden by default, visible on hover */
+}
+
+.profile-item:hover::after {
+    display: block;
+}
+
+/* Profile Input Styling (Search Box) */
+.profile-input {
+    padding: 10px;
+    font-size: 16px;
+    border: 1px solid #ddd;
+    border-radius: 0; /* Square edges */
+    width: 100%;
+    box-sizing: border-box;
+    margin-bottom: 15px; /* Space below the search input */
+}
+
+.profile-input:focus {
+    outline: none;
+    border-color: #0F70B7;
+}
+
+/* Dropdown Styling to Match Inputs */
+.profile-input select {
+    appearance: none; /* Remove default arrow for consistency */
+    background-color: white;
+    padding: 10px;
+    border: 1px solid #ddd;
+    font-size: 16px;
+    border-radius: 0; /* Square edges */
+    box-sizing: border-box;
+    width: 100%;
+    cursor: pointer;
+}
+
+.save-button {
+    flex: 1;
+    padding: 10px;
+    font-size: 16px;
+    background-color: #ddd;
+    color: white;
+    border: none;
+    cursor: not-allowed;
+    border-radius: 0; /* Square edges */
+    transition: background-color 0.3s ease;
+}
+
+.save-button.active {
+    background-color: #0F70B7; /* Blue when active */
+    cursor: pointer;
+}
+
+.save-button:disabled {
+    background-color: #ddd; /* Grey when disabled */
+    cursor: not-allowed;
+}
+
+
+
+/* Form Styling */
+.modal-form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.form-input {
+    padding: 10px;
+    font-size: 16px;
+    border: 1px solid #ddd;
+    border-radius: 0; /* Square edges */
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.file-upload {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.upload-button {
+    background-color: #0F70B7;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    flex: 1;
+    margin-right: 10px;
+    border-radius: 0; /* Square edges */
+}
+
+.upload-button:hover {
+    background-color: #0D5A94;
+}
+
+.file-count {
+    flex: 1;
+    text-align: right;
+    font-size: 16px;
+    color: #555;
+}
+
+.process-button, .view-historic-button {
+    background-color: #0F70B7;
+    color: white;
+    border: none;
+    padding: 15px;
+    font-size: 16px;
+    cursor: pointer;
+    width: 100%;
+    border-radius: 0; /* Square edges */
+    margin-top: 10px;
+}
+
+.process-button:hover, .view-historic-button:hover {
+    background-color: #0D5A94;
+}
+
+/* Table Styling */
+.table-container {
+    max-height: calc(75vh - 160px); /* Adjust height to fit in modal */
+    overflow-y: auto;
+    margin-top: 10px;
+}
+
+.users-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 10px;
+}
+
+.users-table th, .users-table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
+
+.users-table th {
+    background-color: #f4f4f4;
+    font-weight: bold;
+}
+
+.users-table tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+.users-table .delete-button {
+    width: 100%; /* Ensure button fills the entire column */
+    background-color: #D9534F; /* Red color for delete */
+    color: white;
+    border: none;
+    padding: 10px 0; /* Padding for height consistency */
+    cursor: pointer;
+    border-radius: 0; /* Square edges */
+    box-sizing: border-box; /* Include padding and border in the button's total width */
+}
+
+.users-table .delete-button:hover {
+    background-color: #c94440;
+}
+
+/* Create User Button */
+.create-user-button {
+    width: 100%;
+    padding: 15px;
+    font-size: 16px;
+    background-color: #0F70B7;
+    color: white;
+    border: none;
+    margin-top: 20px;
+    cursor: pointer;
+    border-radius: 0;
+    transition: background-color 0.3s ease;
+}
+
+.create-user-button:hover {
+    background-color: #0D5A94;
+}
+
+/* Contacts Table Styling */
+.contacts-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 10px;
+}
+
+.contacts-table th, .contacts-table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
+
+.contacts-table th {
+    background-color: #f4f4f4;
+    font-weight: bold;
+}
+
+.contacts-table tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+.contacts-table .delete-button {
+    width: 100%; /* Ensure button fills the entire column */
+    background-color: #D9534F; /* Red color for delete */
+    color: white;
+    border: none;
+    padding: 10px 0; /* Padding for height consistency */
+    cursor: pointer;
+    border-radius: 0; /* Square edges */
+    box-sizing: border-box; /* Include padding and border in the button's total width */
+}
+
+.contacts-table .delete-button:hover {
+    background-color: #c94440;
+}
+
+/* Create Contact Button */
+.create-contact-button {
+    width: 100%;
+    padding: 15px;
+    font-size: 16px;
+    background-color: #0F70B7;
+    color: white;
+    border: none;
+    margin-top: 20px;
+    cursor: pointer;
+    border-radius: 0;
+    transition: background-color 0.3s ease;
+}
+
+.create-contact-button:hover {
+    background-color: #0D5A94;
+}
+
+.reports-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 10px;
+}
+
+.reports-table th, .reports-table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
+
+.reports-table th {
+    background-color: #f4f4f4;
+    font-weight: bold;
+}
+
+.reports-table tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+.download-button, .delete-button {
+    width: 48%; /* Fit both buttons within the column */
+    background-color: #0F70B7;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    cursor: pointer;
+    border-radius: 0; /* Square edges */
+}
+
+.download-button:hover {
+    background-color: #0D5A94;
+}
+
+.delete-button {
+    background-color: #D9534F; /* Red color for delete */
+}
+
+.delete-button:hover {
+    background-color: #c94440;
+}
+
+/* Pagination Controls */
+.pagination {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.page-button {
+    background-color: #0F70B7;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    cursor: pointer;
+    border-radius: 0; /* Square edges */
+     /* Flex allows button to expand to fit */
+}
+
+.previous-button {
+    text-align: left;
+    margin-right: auto; /* Align left */
+}
+
+.next-button {
+    text-align: right;
+    margin-left: auto; /* Align right */
+}
+
+.page-button:hover {
+    background-color: #0D5A94;
+}
+
+/* Delete Confirmation Button Styling */
+.delete-challenge {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.delete-input {
+    flex: 2;
+    padding: 10px;
+    font-size: 16px;
+    border: 1px solid #ddd;
+    border-radius: 0; /* Square edges */
+    box-sizing: border-box;
+}
+
+.delete-confirm-button {
+    flex: 1;
+    padding: 10px;
+    font-size: 16px;
+    background-color: #D9534F;
+    color: white;
+    border: none;
+    cursor: not-allowed;
+    border-radius: 0; /* Square edges */
+    transition: background-color 0.3s ease;
+}
+
+.delete-confirm-button.active {
+    cursor: pointer;
+    background-color: #c94440;
+}
+
+.delete-confirm-button:disabled {
+    background-color: #ddd;
+    cursor: not-allowed;
+}
+
+/* Settings Modal Block Styling */
+.settings-block {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+}
+
+
+/* Settings Modal Button Styling */
+.settings-modal {
+    height: 25%;
+}
+.settings-modal-button {
+    flex: 1;
+    height: 150px;
+    background-color: #0F70B7; /* Blue color */
+    color: white;
+    border: none;
+    cursor: pointer;
+    margin: 0;
+    padding: 0;
+    border-radius: 0; /* Square edges */
+    transition: background-color 0.3s ease;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.settings-modal-button img {
+    max-width: 60%;
+    max-height: 60%;
+}
+
+.settings-modal-button:hover {
+    background-color: #0D5A94;
+}
+
+/* Tooltip Styling */
+.settings-modal-button[data-tooltip]:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: -25px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #333;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 4px;
+    white-space: nowrap;
+    z-index: 10;
+    font-size: 12px;
+    opacity: 0.9;
+}
+
+/* Close Button Styling */
 .close {
     position: absolute;
     top: 10px;
     right: 15px;
     font-size: 24px;
     cursor: pointer;
+    color: #333;
+}
+
+/* Modal Button Styling */
+.modal-button {
+    width: 100%;
+    padding: 15px;
+    font-size: 16px;
+    background-color: #0F70B7;
+    color: white;
+    border: none;
+    margin-top: 20px;
+    cursor: pointer;
+    border-radius: 0; /* Square edges */
+    transition: background-color 0.3s ease;
+}
+
+.modal-button:hover {
+    background-color: #0D5A94;
 }

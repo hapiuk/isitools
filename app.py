@@ -35,20 +35,30 @@ def load_user(user_id):
 # Route to create a default profile (run once to setup)
 @app.route('/create-default-profile')
 def create_default_profile():
-    hashed_password = bcrypt.generate_password_hash('password').decode('utf-8')
-    default_user = User(
-        first_name='John',
-        last_name='Doe',
-        email='admin@example.com',
-        department='IT',
-        location='Head Office',
-        access_level='Admin',
-        password_hash=hashed_password
-    )
-    db.session.add(default_user)
-    db.session.commit()
-    flash('Default profile created. You can now log in with admin@example.com / password', 'info')
+    if User.query.filter_by(email='admin@example.com').first() is None:
+        hashed_password = bcrypt.generate_password_hash('password').decode('utf-8')
+        default_user = User(
+            first_name='John',
+            last_name='Doe',
+            email='admin@example.com',
+            department='IT',
+            location='Head Office',
+            access_level='Admin',
+            password_hash=hashed_password
+        )
+        db.session.add(default_user)
+        db.session.commit()
+        flash('Default profile created. You can now log in with admin@example.com / password', 'info')
+    else:
+        flash('Default profile already exists.', 'info')
     return redirect(url_for('login'))
+
+@app.route('/')
+def index():
+    if current_user.is_authenticated:
+        return redirect(url_for('dashboard'))
+    else:
+        return redirect(url_for('login'))
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -59,6 +69,7 @@ def login():
         
         if user and user.check_password(password):
             login_user(user)
+            flash('Logged in successfully!', 'info')
             return redirect(url_for('dashboard'))
         else:
             flash('Invalid email or password', 'error')
