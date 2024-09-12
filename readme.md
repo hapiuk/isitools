@@ -1,0 +1,66 @@
+# Industrial Safety Inspections - UI Overview
+
+## Project Description
+
+This project is a web-based UI designed for Industrial Safety Inspections (ISI), providing a modern and intuitive interface for managing system users, contacts, email settings, and reporting processes. The UI is built using HTML, CSS, and JavaScript, with a consistent, clean design aimed at enhancing the user experience. Future backend development will integrate Python scripts to handle data extraction, processing, and exporting to Excel and PDF formats.
+
+**Note:** The project hosted here contains only dummy data and does not represent real data from ISI operations.
+
+## Features
+
+- **User Management:** View, create, and delete system users with an intuitive interface. User details include First Name, Last Name, Email, Department, Location, and Access Level (Admin/User).
+- **Contact Management:** Manage system contacts with easy-to-use search and pagination features. Contacts include First Name, Last Name, Email, and Contact Number.
+- **Email Settings:** Configure mail server settings including Mail Server, Port, Username, Password, TLS/SSL options, Default Sender Name, and Email.
+- **Report Processing:** Process and view reports for PUWER, LOLER, and AECOM, with functionalities to upload files, process data, and view historic reports.
+- **System Settings:** Access system configurations through settings for users, contacts, and mail settings, all presented in a consistent modal format.
+- **Flash Messages:** Provides feedback and error handling through dismissible flash messages, styled to fit within the application theme.
+- **Responsive Design:** Consistent look and feel across devices, with a footer that remains fixed at the bottom of the viewport.
+
+## Upcoming Features (Backend Development)
+
+The backend will be developed using Python and will include the following functionalities:
+
+- **Data Extraction:** Scripts to extract data from various sources, ensuring accurate and timely data availability.
+- **Data Processing:** Processing the extracted data and formatting it for export.
+- **Excel and PDF Export:** Exporting the processed data into Excel files with accompanying PDF reports for comprehensive data presentation.
+- **Integration with UI:** Backend scripts will be integrated with the UI to handle real-time data processing and reporting based on user actions within the application.
+
+## Installation
+
+To set up the project locally:
+
+1. Clone the repository:
+
+    ```bash
+    git clone https://github.com/yourusername/isi-ui.git
+    ```
+
+2. Navigate into the project directory:
+
+    ```bash
+    cd isi-ui
+    ```
+
+3. Install the required dependencies:
+
+    ```bash
+    pip install -r requirements.txt
+    ```
+
+4. Run the application:
+
+    ```bash
+    flask run
+    ```
+
+## Usage
+
+- Access the application via the local server (e.g., `http://127.0.0.1:5000/`).
+- Log in using the default admin credentials (or create a user through the admin interface).
+- Navigate through the dashboard to access different sections like user management, contacts, and system settings.
+- Use the modals to update configurations and manage data.
+
+## Contact
+
+For further updates or modifications, please contact:
+- **Aaron Gomm**: [LinkedIn](https://www.linkedin.com/in/aaron-gomm-b8880868/)
