@@ -173,12 +173,12 @@ function loadContactData(page = 1) {
 /**
  * Show a flash message on the screen.
  * @param {string} message - The message to display.
- * @param {string} category - The type of the message ('success' or 'error').
+ * @param {string} category - The type of the message ('success', 'error', 'info').
  */
 function flashMessage(message, category) {
     const flashContainer = document.createElement('div');
     flashContainer.className = `flash-message ${category}`;
-    flashContainer.textContent = message;
+    flashContainer.innerHTML = `${message} <button class="dismiss-btn" onclick="dismissFlashMessage()">×</button>`;
 
     const existingFlash = document.querySelector('.flash-message');
     if (existingFlash) {
@@ -187,9 +187,21 @@ function flashMessage(message, category) {
 
     document.body.appendChild(flashContainer);
 
-    setTimeout(() => {
-        flashContainer.style.display = 'none';
-    }, 3000);
+    // Automatically hide the message after a longer duration to allow error reading
+    if (category !== 'info') {
+        setTimeout(() => {
+            flashContainer.style.display = 'none';
+        }, 5000);
+    }
+}
+
+/**
+ * Dismiss flash messages manually.
+ */
+function dismissFlashMessage() {
+    document.querySelectorAll('.flash-message').forEach(msg => {
+        msg.style.display = 'none';
+    });
 }
 
 // =====================
@@ -299,7 +311,6 @@ function updateProfileItem(event, inputId, buttonId) {
 
     const input = document.getElementById(inputId);
     const button = document.getElementById(buttonId);
-    const updateMessage = document.getElementById('profileUpdateMessage');
 
     // AJAX request to update the field on the server
     fetch('/update_profile', {
@@ -336,15 +347,14 @@ function updateProfileItem(event, inputId, buttonId) {
  */
 function showProfileUpdateMessage(message, type) {
     const messageContainer = document.getElementById('profileUpdateMessage');
-    messageContainer.textContent = message;
+    messageContainer.innerHTML = `${message} <button class="dismiss-btn" onclick="dismissFlashMessage()">×</button>`;
     messageContainer.className = ''; // Reset classes
     messageContainer.classList.add('flash-message', type);
-    messageContainer.style.display = 'block';
+    messageContainer.style.display = 'flex';
 
-    // Hide the message after 3 seconds
-    setTimeout(() => {
-        messageContainer.style.display = 'none';
-    }, 3000);
+    if (type === 'error') {
+        console.error(message); // Log error messages to the console
+    }
 }
 
 // =====================
@@ -412,19 +422,6 @@ document.getElementById('deleteInput').addEventListener('input', function() {
 document.getElementById('confirmDeleteButton').addEventListener('click', confirmDelete);
 
 // =====================
-// Flash Message Dismissal
-// =====================
-
-/**
- * Dismiss flash messages.
- */
-function dismissFlashMessage() {
-    document.querySelectorAll('.flash-message').forEach(msg => {
-        msg.style.display = 'none';
-    });
-}
-
-// =====================
 // User Menu Dropdown
 // =====================
 
@@ -475,7 +472,6 @@ function enableEmailSaveButton(inputId, buttonId) {
     const input = document.getElementById(inputId);
     const button = document.getElementById(buttonId);
 
-    // Enable button on input change
     input.addEventListener('input', function() {
         if (input.value.trim() !== input.defaultValue.trim()) {
             button.disabled = false;
@@ -503,11 +499,14 @@ function initializeEmailSaveButtons() {
         { id: 'mail_server', button: 'saveMailServer' },
         { id: 'mail_port', button: 'saveMailPort' },
         { id: 'email_username', button: 'saveEmailUsername' },
-        { id: 'email_password', button: 'saveEmailPassword' },
+        { id: 'oauth_client_id', button: 'saveOAuthClientId' },
+        { id: 'oauth_tenant_id', button: 'saveOAuthTenantId' },
+        { id: 'oauth_client_secret', button: 'saveOAuthClientSecret' },
         { id: 'use_tls', button: 'saveUseTls' },
         { id: 'use_ssl', button: 'saveUseSsl' },
         { id: 'default_sender_name', button: 'saveDefaultSenderName' },
-        { id: 'default_sender_email', button: 'saveDefaultSenderEmail' }
+        { id: 'default_sender_email', button: 'saveDefaultSenderEmail' },
+        { id: 'oauth_scope', button: 'saveOAuthScope' } 
     ];
 
     fields.forEach(({ id, button }) => {
@@ -518,7 +517,7 @@ function initializeEmailSaveButtons() {
 /**
  * Update Email Settings Item using AJAX
  * @param {Event} event - The click event on the save button.
- * @param {string} field - The field of the email setting input.
+ * @param {string} inputId - The ID of the email setting input field.
  * @param {string} buttonId - The ID of the save button.
  */
 function updateEmailSettingsItem(event, field, buttonId) {
@@ -526,11 +525,10 @@ function updateEmailSettingsItem(event, field, buttonId) {
 
     const input = document.getElementById(field);
     const button = document.getElementById(buttonId);
-    const updateMessage = document.getElementById('emailUpdateMessage');
 
     // Check if input and button exist
     if (!input || !button) {
-        console.error(`Input or button not found for field: ${field}`);
+        showEmailUpdateMessage(`Input or button not found for field: ${field}`, 'error');
         return;
     }
 
@@ -551,7 +549,7 @@ function updateEmailSettingsItem(event, field, buttonId) {
     .then(response => response.json())
     .then(data => {
         if (data.status === 'success') {
-            input.defaultValue = input.type === 'checkbox' ? input.checked.toString() : input.value;
+            input.defaultValue = input.value;
             button.disabled = true;
             button.classList.remove('active');
             showEmailUpdateMessage(data.message, 'success');
@@ -560,48 +558,58 @@ function updateEmailSettingsItem(event, field, buttonId) {
         }
     })
     .catch(error => {
-        console.error('Error updating email setting:', error);
-        showEmailUpdateMessage('An error occurred. Please try again.', 'error');
+        showEmailUpdateMessage(`An error occurred. Please try again. Error: ${error.message}`, 'error');
     });
 }
 
 /**
  * Show Flash Message Within the Email Settings Modal
  * @param {string} message - The message to display.
- * @param {string} type - The type of the message ('success' or 'error').
+ * @param {string} type - The type of the message ('success', 'error', 'info').
  */
 function showEmailUpdateMessage(message, type) {
     const messageContainer = document.getElementById('emailUpdateMessage');
-    messageContainer.textContent = message;
+    messageContainer.innerHTML = `${message} <button class="dismiss-btn" onclick="dismissFlashMessage()">×</button>`;
     messageContainer.className = ''; // Reset classes
     messageContainer.classList.add('flash-message', type);
-    messageContainer.style.display = 'block';
+    messageContainer.style.display = 'flex'; // Show as a flex container for better alignment
 
-    // Hide the message after 3 seconds
-    setTimeout(() => {
-        messageContainer.style.display = 'none';
-    }, 3000);
+    if (type === 'error') {
+        console.error(message); // Log error messages to the console
+    } else {
+        console.log(message); // Log success messages as well if needed
+    }
 }
+
 /**
- * Test Email Settings
+ * Function to test email settings
  */
 function testEmailSettings() {
-    // Fetch current email settings
+    // Display loading message or spinner if desired
+    showEmailUpdateMessage('Testing email settings, please wait...', 'info');
+
+    // Make an AJAX request to test email settings
     fetch('/test_email_settings', {
-        method: 'POST'
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+        }
     })
     .then(response => response.json())
     .then(data => {
         if (data.status === 'success') {
-            // Show the current settings in the flash message for debugging
-            showEmailUpdateMessage(`Test email sent using settings: ${JSON.stringify(data.settings)}`, 'debug');
+            showEmailUpdateMessage('Test email sent successfully. Refreshing...', 'success');
+            // Wait for a short duration to display the success message before refreshing
+            setTimeout(() => {
+                location.reload(); // Reload the page after a successful test
+            }, 2000); // Adjust delay as needed
         } else {
-            showEmailUpdateMessage(data.message, 'error');
+            showEmailUpdateMessage(`Failed to send test email: ${data.message}`, 'error');
         }
     })
     .catch(error => {
+        showEmailUpdateMessage(`An error occurred while testing email settings: ${error.message}`, 'error');
         console.error('Error testing email settings:', error);
-        showEmailUpdateMessage('An error occurred while testing email settings. Please try again.', 'error');
     });
 }
 

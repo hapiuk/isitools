@@ -8,8 +8,13 @@ import os
 import smtplib
 import random
 import string
+import requests
+import base64
+import logging
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+
+logging.basicConfig(level=logging.DEBUG)
 
 # Initialize the Flask application
 app = Flask(__name__)
@@ -57,47 +62,157 @@ class Contact(db.Model):
     email = db.Column(db.String(150), unique=True, nullable=False)
     contact_number = db.Column(db.String(50), nullable=False)
 
-# Email Settings model
 class EmailSettings(db.Model):
     __tablename__ = 'email_settings'
     id = db.Column(db.Integer, primary_key=True)
     mail_server = db.Column(db.String(150), nullable=False)
     mail_port = db.Column(db.Integer, nullable=False)
-    email_username = db.Column(db.String(150), nullable=False)
-    email_password = db.Column(db.String(150), nullable=False)
+    email_username = db.Column(db.String(150), nullable=False)  # Keep this for 'From' address
+    oauth_client_id = db.Column(db.String(150), nullable=True)
+    oauth_tenant_id = db.Column(db.String(150), nullable=True)
+    oauth_client_secret = db.Column(db.String(150), nullable=True)
     use_tls = db.Column(db.Boolean, nullable=False)
     use_ssl = db.Column(db.Boolean, nullable=False)
     default_sender_name = db.Column(db.String(150), nullable=False)
     default_sender_email = db.Column(db.String(150), nullable=False)
+    oauth_scope = db.Column(db.String(150), default='https://graph.microsoft.com/.default')
 
-# Function to send emails
-def send_user_email(to_address, subject, body):
+def get_oauth_token():
+    settings = EmailSettings.query.first()
+    
+    if not settings or not settings.oauth_client_id or not settings.oauth_client_secret or not settings.oauth_tenant_id:
+        flash("OAuth settings are not configured properly in the database.", "error")
+        return None
+    
+    data = {
+        'grant_type': 'client_credentials',
+        'client_id': settings.oauth_client_id,
+        'client_secret': settings.oauth_client_secret,
+        'scope': 'https://graph.microsoft.com/.default',  # Application permission scope
+    }
+
+    token_url = f'https://login.microsoftonline.com/{settings.oauth_tenant_id}/oauth2/v2.0/token'
+
+    try:
+        response = requests.post(token_url, data=data)
+        response.raise_for_status()
+        tokens = response.json()
+        return tokens['access_token']
+    except requests.exceptions.RequestException as e:
+        error_content = response.content.decode() if response else 'No response content'
+        flash(f"Failed to retrieve OAuth token: {e}. Response content: {error_content}", "error")
+        print(f"Error retrieving OAuth token: {e}. Response content: {error_content}")
+        return None
+
+import base64
+import os
+import requests
+import logging
+from flask import flash
+
+# Set up logging
+logging.basicConfig(level=logging.DEBUG)
+
+def send_user_email(to_address, subject, password):
     settings = EmailSettings.query.first()
 
     if not settings:
         flash("Email settings are not configured properly in the database.", "error")
-        return
+        return False
 
     try:
-        # Set up the SMTP server using settings from the database
-        server = smtplib.SMTP(settings.mail_server, settings.mail_port)
-        if settings.use_tls:
-            server.starttls()
-        server.login(settings.email_username, settings.email_password)
+        token = get_oauth_token()
+        if not token:
+            return False
 
-        # Create the email
-        msg = MIMEMultipart()
-        msg['From'] = f"{settings.default_sender_name} <{settings.default_sender_email}>"
-        msg['To'] = to_address
-        msg['Subject'] = subject
-        msg.attach(MIMEText(body, 'plain'))
+        # Correct path to the logo image
+        logo_path = os.path.join(BASE_DIR, 'static', 'images', 'logos', 'Logo.png')
+        logging.debug(f"Attempting to load logo from path: {logo_path}")
 
-        # Send the email
-        server.send_message(msg)
-        server.quit()
-        flash('Email sent successfully.', 'success')
-    except Exception as e:
-        flash(f"Failed to send email: {e}", "error")
+        # Load and encode the logo image
+        try:
+            with open(logo_path, 'rb') as logo_file:
+                logo_data = base64.b64encode(logo_file.read()).decode('utf-8')
+        except FileNotFoundError:
+            error_message = f"Logo file not found at {logo_path}. Please check the file path."
+            flash(error_message, "error")
+            logging.error(error_message)
+            logo_data = ''  # Skip the logo if not found
+
+        # Set up the Graph API endpoint for sending mail
+        sender_email = settings.default_sender_email
+        graph_api_url = f"https://graph.microsoft.com/v1.0/users/{sender_email}/sendMail"
+
+        # Prepare the HTML content of the email
+        html_content = f"""
+        <html>
+        <body style="font-family: Arial, sans-serif; line-height: 1.6;">
+            <div style="text-align: center;">
+                <img src="data:image/png;base64,{logo_data}" alt="ISI Tools Logo" style="max-width: 200px; margin-bottom: 20px;">
+            </div>
+            <p>Dear User,</p>
+            <p>Your account has been created successfully. Here are your login details:</p>
+            <ul>
+                <li><strong>Email:</strong> {to_address}</li>
+                <li><strong>Password:</strong> {password}</li>
+            </ul>
+            <p>You can log in using the following link:</p>
+            <p><a href="http://isitools.local:5000" style="color: #0F70B7; text-decoration: none;">Login to ISI Tools</a></p>
+            <p>Best regards,<br>ISI Tools Admin</p>
+        </body>
+        </html>
+        """
+
+        # Prepare the email payload
+        email_message = {
+            "message": {
+                "subject": subject,
+                "body": {
+                    "contentType": "HTML",
+                    "content": html_content
+                },
+                "toRecipients": [
+                    {
+                        "emailAddress": {
+                            "address": to_address
+                        }
+                    }
+                ],
+                "from": {
+                    "emailAddress": {
+                        "address": settings.default_sender_email
+                    }
+                }
+            },
+            "saveToSentItems": "true"
+        }
+
+        headers = {
+            'Authorization': f'Bearer {token}',
+            'Content-Type': 'application/json'
+        }
+
+        # Send the request to the Graph API
+        response = requests.post(graph_api_url, json=email_message, headers=headers)
+
+        # Log response details for debugging
+        logging.debug(f"Response status: {response.status_code}, Response content: {response.content}")
+
+        if response.status_code == 202:
+            flash('Email sent successfully.', 'success')
+            return True
+        else:
+            error_message = f"Failed to send email: {response.status_code} - {response.content.decode()}"
+            flash(error_message, 'error')
+            logging.error(error_message)
+            return False
+
+    except requests.exceptions.RequestException as e:
+        error_content = response.content.decode() if response else 'No response content'
+        error_message = f"Failed to send email via Graph API: {e}. Response content: {error_content}"
+        flash(error_message, 'error')
+        logging.error(error_message)
+        return False
 
 # Create the database tables if they don't exist
 with app.app_context():
@@ -299,14 +414,20 @@ def update_email_settings():
             settings.default_sender_name = value
         elif field == 'default_sender_email':
             settings.default_sender_email = value
+        elif field == 'oauth_client_id':
+            settings.oauth_client_id = value
+        elif field == 'oauth_tenant_id':
+            settings.oauth_tenant_id = value
+        elif field == 'oauth_client_secret':
+            settings.oauth_client_secret = value
         else:
             return jsonify({'status': 'error', 'message': 'Invalid field.'}), 400
 
-        db.session.commit()  # Commit the changes to the database
+        db.session.commit()
         return jsonify({'status': 'success', 'message': f'{field.replace("_", " ").title()} updated successfully!'}), 200
-
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)}), 500
+
 
 # Route to test email settings
 @app.route('/test_email_settings', methods=['POST'])
@@ -335,10 +456,12 @@ def test_email_settings():
     # Send test email
     try:
         send_user_email('aaron.gomm@outlook.com', 'Test Email', 'This is a test email to verify settings.')
-        return jsonify({'status': 'success', 'settings': email_info})
+        return jsonify({'status': 'success', 'settings': email_info}), 200
     except Exception as e:
+        # Log error for debugging
+        print(f"Failed to send test email: {e}")
         return jsonify({'status': 'error', 'message': f'Failed to send test email: {e}'}), 500
-        
+
 # Route to update user profile
 @app.route('/update_profile', methods=['POST'])
 @login_required
