@@ -384,80 +384,67 @@
         <span class="close" onclick="closeModal('mailSettingsModal')">&times;</span>
         <!-- Modal Title -->
         <h2>Email Settings</h2>
+        <!-- Flash Message Container for Email Settings -->
+        <div id="emailUpdateMessage" class="flash-message" style="display: none;"></div>
+        <!-- Form for Updating Email Settings -->
         <form class="modal-form">
             <!-- Mail Server -->
             <div class="profile-item">
-                <form class="profile-form" onsubmit="updateEmailSettingsItem(event, 'mail_server', 'saveMailServer')">
-                    <input type="text" id="mail_server" class="profile-input" placeholder="Mail Server" value="{{ email_settings.mail_server }}" required>
-                    <button type="submit" id="saveMailServer" class="save-button" disabled>Save</button>
-                </form>
+                <input type="text" id="mail_server" class="profile-input" placeholder="Mail Server" value="{{ email_settings.mail_server }}" required>
+                <button type="submit" id="saveMailServer" class="save-button" onclick="updateEmailSettingsItem(event, 'mail_server', 'saveMailServer')" disabled>Save</button>
             </div>
 
             <!-- Mail Port -->
             <div class="profile-item">
-                <form class="profile-form" onsubmit="updateEmailSettingsItem(event, 'mail_port', 'saveMailPort')">
-                    <input type="number" id="mail_port" class="profile-input" placeholder="Mail Port" value="{{ email_settings.mail_port }}" required>
-                    <button type="submit" id="saveMailPort" class="save-button" disabled>Save</button>
-                </form>
+                <input type="number" id="mail_port" class="profile-input" placeholder="Mail Port" value="{{ email_settings.mail_port }}" required>
+                <button type="submit" id="saveMailPort" class="save-button" onclick="updateEmailSettingsItem(event, 'mail_port', 'saveMailPort')" disabled>Save</button>
             </div>
 
             <!-- Email Username -->
             <div class="profile-item">
-                <form class="profile-form" onsubmit="updateEmailSettingsItem(event, 'email_username', 'saveEmailUsername')">
-                    <input type="text" id="email_username" class="profile-input" placeholder="Email Username" value="{{ email_settings.email_username }}" required>
-                    <button type="submit" id="saveEmailUsername" class="save-button" disabled>Save</button>
-                </form>
+                <input type="text" id="email_username" class="profile-input" placeholder="Email Username" value="{{ email_settings.email_username }}" required>
+                <button type="submit" id="saveEmailUsername" class="save-button" onclick="updateEmailSettingsItem(event, 'email_username', 'saveEmailUsername')" disabled>Save</button>
             </div>
 
             <!-- Email Password -->
             <div class="profile-item">
-                <form class="profile-form" onsubmit="updateEmailSettingsItem(event, 'email_password', 'saveEmailPassword')">
-                    <input type="password" id="email_password" class="profile-input" placeholder="Email Password" value="{{ email_settings.email_password }}" required>
-                    <button type="submit" id="saveEmailPassword" class="save-button" disabled>Save</button>
-                </form>
+                <input type="password" id="email_password" class="profile-input" placeholder="Email Password" value="{{ email_settings.email_password }}" required>
+                <button type="submit" id="saveEmailPassword" class="save-button" onclick="updateEmailSettingsItem(event, 'email_password', 'saveEmailPassword')" disabled>Save</button>
             </div>
 
             <!-- Use TLS -->
-            <div class="profile-item">
-                <form class="profile-form" onsubmit="updateEmailSettingsItem(event, 'use_tls', 'saveUseTls')">
-                    <div style="display: flex; align-items: center; width: 100%;">
-                        <label for="use_tls" style="flex: 1; text-align: left; padding: 12px 0;">Use TLS</label>
-                        <input type="checkbox" id="use_tls" class="profile-input" style="width: auto; margin-right: 10px;" {% if email_settings.use_tls %}checked{% endif %}>
-                        <button type="submit" id="saveUseTls" class="save-button" style="flex-shrink: 0;" disabled>Save</button>
-                    </div>
-                </form>
+            <div class="profile-item" style="display: flex; align-items: center;">
+                <label for="use_tls" style="flex: 1; text-align: left; padding: 12px 0;">Use TLS</label>
+                <input type="checkbox" id="use_tls" class="profile-input" style="width: auto; margin-right: 10px;" {% if email_settings.use_tls %}checked{% endif %}>
+                <button type="submit" id="saveUseTls" class="save-button" onclick="updateEmailSettingsItem(event, 'use_tls', 'saveUseTls')" disabled>Save</button>
             </div>
 
             <!-- Use SSL -->
-            <div class="profile-item">
-                <form class="profile-form" onsubmit="updateEmailSettingsItem(event, 'use_ssl', 'saveUseSsl')">
-                    <div style="display: flex; align-items: center; width: 100%;">
-                        <label for="use_ssl" style="flex: 1; text-align: left; padding: 12px 0;">Use SSL</label>
-                        <input type="checkbox" id="use_ssl" class="profile-input" style="width: auto; margin-right: 10px;" {% if email_settings.use_ssl %}checked{% endif %}>
-                        <button type="submit" id="saveUseSsl" class="save-button" style="flex-shrink: 0;" disabled>Save</button>
-                    </div>
-                </form>
+            <div class="profile-item" style="display: flex; align-items: center;">
+                <label for="use_ssl" style="flex: 1; text-align: left; padding: 12px 0;">Use SSL</label>
+                <input type="checkbox" id="use_ssl" class="profile-input" style="width: auto; margin-right: 10px;" {% if email_settings.use_ssl %}checked{% endif %}>
+                <button type="submit" id="saveUseSsl" class="save-button" onclick="updateEmailSettingsItem(event, 'use_ssl', 'saveUseSsl')" disabled>Save</button>
             </div>
 
             <!-- Default Sender Name -->
             <div class="profile-item">
-                <form class="profile-form" onsubmit="updateEmailSettingsItem(event, 'default_sender_name', 'saveDefaultSenderName')">
-                    <input type="text" id="default_sender_name" class="profile-input" placeholder="Default Sender Name" value="{{ email_settings.default_sender_name }}" required>
-                    <button type="submit" id="saveDefaultSenderName" class="save-button" disabled>Save</button>
-                </form>
+                <input type="text" id="default_sender_name" class="profile-input" placeholder="Default Sender Name" value="{{ email_settings.default_sender_name }}" required>
+                <button type="submit" id="saveDefaultSenderName" class="save-button" onclick="updateEmailSettingsItem(event, 'default_sender_name', 'saveDefaultSenderName')" disabled>Save</button>
             </div>
 
             <!-- Default Sender Email -->
             <div class="profile-item">
-                <form class="profile-form" onsubmit="updateEmailSettingsItem(event, 'default_sender_email', 'saveDefaultSenderEmail')">
-                    <input type="email" id="default_sender_email" class="profile-input" placeholder="Default Sender Email" value="{{ email_settings.default_sender_email }}" required>
-                    <button type="submit" id="saveDefaultSenderEmail" class="save-button" disabled>Save</button>
-                </form>
+                <input type="email" id="default_sender_email" class="profile-input" placeholder="Default Sender Email" value="{{ email_settings.default_sender_email }}" required>
+                <button type="submit" id="saveDefaultSenderEmail" class="save-button" onclick="updateEmailSettingsItem(event, 'default_sender_email', 'saveDefaultSenderEmail')" disabled>Save</button>
+            </div>
+
+            <!-- Test Email Button -->
+            <div class="profile-item">
+                <button type="button" class="test-email-button" onclick="testEmailSettings()">Test Email</button>
             </div>
         </form>
     </div>
 </div>
-
 
 
     <!-- My Profile Modal -->

@@ -6,6 +6,8 @@ from flask_mail import Mail, Message
 from werkzeug.security import generate_password_hash, check_password_hash
 import os
 import smtplib
+import random
+import string
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
@@ -18,26 +20,19 @@ BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(BASE_DIR, 'static', 'db', 'isitools.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# Email Configuration
-app.config['MAIL_SERVER'] = 'smtp-mail.outlook.com'
-app.config['MAIL_PORT'] = 587
-app.config['MAIL_USERNAME'] = 'Hapiuk@hotmail.com'
-app.config['MAIL_PASSWORD'] = 'Agnese11052021!'
-app.config['MAIL_USE_TLS'] = True
-app.config['MAIL_USE_SSL'] = False
-
 # Initialize extensions
 db = SQLAlchemy(app)
 mail = Mail(app)  # Initialize Flask-Mail
 migrate = Migrate(app, db)  # Initialize Flask-Migrate
 
 # Initialize the LoginManager
+# Initialize the LoginManager
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'  # Redirect to login page if not authenticated
 
 # User model for authentication
 class User(UserMixin, db.Model):
-    __tablename__ = 'users'  # Specify the table name
+    __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
     first_name = db.Column(db.String(150), nullable=False)
     last_name = db.Column(db.String(150), nullable=False)
@@ -75,43 +70,38 @@ class EmailSettings(db.Model):
     default_sender_name = db.Column(db.String(150), nullable=False)
     default_sender_email = db.Column(db.String(150), nullable=False)
 
+# Function to send emails
 def send_user_email(to_address, subject, body):
     settings = EmailSettings.query.first()
 
-    # Set up the SMTP server
-    server = smtplib.SMTP(settings.mail_server, settings.mail_port)
-    server.starttls() if settings.use_tls else server.start()
-    server.login(settings.email_username, settings.email_password)
+    if not settings:
+        flash("Email settings are not configured properly in the database.", "error")
+        return
 
-    # Create the email
-    msg = MIMEMultipart()
-    msg['From'] = f"{settings.default_sender_name} <{settings.default_sender_email}>"
-    msg['To'] = to_address
-    msg['Subject'] = subject
-    msg.attach(MIMEText(body, 'plain'))
+    try:
+        # Set up the SMTP server using settings from the database
+        server = smtplib.SMTP(settings.mail_server, settings.mail_port)
+        if settings.use_tls:
+            server.starttls()
+        server.login(settings.email_username, settings.email_password)
 
-    # Send the email
-    server.send_message(msg)
-    server.quit()
+        # Create the email
+        msg = MIMEMultipart()
+        msg['From'] = f"{settings.default_sender_name} <{settings.default_sender_email}>"
+        msg['To'] = to_address
+        msg['Subject'] = subject
+        msg.attach(MIMEText(body, 'plain'))
+
+        # Send the email
+        server.send_message(msg)
+        server.quit()
+        flash('Email sent successfully.', 'success')
+    except Exception as e:
+        flash(f"Failed to send email: {e}", "error")
 
 # Create the database tables if they don't exist
 with app.app_context():
     db.create_all()  # This will create the email_settings table if it doesn't exist
-
-    # Add initial email settings if none exist
-    if not EmailSettings.query.first():
-        new_settings = EmailSettings(
-            mail_server='smtp-mail.outlook.com',
-            mail_port=587,
-            email_username='Hapiuk@hotmail.com',
-            email_password='Agnese11052021!',
-            use_tls=True,
-            use_ssl=False,
-            default_sender_name='Aaron Gomm',
-            default_sender_email='Hapiuk@hotmail.com'
-        )
-        db.session.add(new_settings)
-        db.session.commit()
 
 # User loader callback for Flask-Login
 @login_manager.user_loader
@@ -194,6 +184,11 @@ def process_aecom_reports():
     flash('AECOM reports processed successfully.', 'success')
     return redirect(url_for('dashboard'))
 
+# Function to generate a random password
+def generate_random_password(length=12):
+    characters = string.ascii_letters + string.digits + string.punctuation
+    return ''.join(random.choice(characters) for i in range(length))
+
 # Route to create a new user
 @app.route('/create_user', methods=['POST'])
 @login_required
@@ -208,7 +203,9 @@ def create_user():
     department = request.form['department']
     location = request.form['location']
     access_level = request.form['access_level']
-    password = 'defaultpassword'  # Set a default password or generate one
+
+    # Generate a random password
+    password = generate_random_password()
 
     # Check if the user already exists
     if User.query.filter_by(email=email).first():
@@ -230,7 +227,7 @@ def create_user():
 
     # Send the email to the user
     subject = "Your New Account Details"
-    body = f"Hello {first_name},\n\nYour account has been created. Your default password is: {password}\nPlease change it upon your first login."
+    body = f"Hello {first_name},\n\nYour account has been created. Your password is: {password}\nPlease change it upon your first login."
     try:
         send_user_email(email, subject, body)
         flash('New user created successfully and email sent.', 'success')
@@ -239,9 +236,38 @@ def create_user():
 
     return redirect(url_for('dashboard'))
 
+@app.route('/email_settings', methods=['POST'])
+@login_required
+def email_settings():
+    if current_user.access_level != 'Admin':
+        return jsonify({'status': 'error', 'message': 'You do not have permission to perform this action.'}), 403
 
+    # Fetch the current email settings record or create a new one if none exists
+    settings = EmailSettings.query.first()
+    if not settings:
+        settings = EmailSettings()
 
-# Route to update email settings via AJAX
+    # Update settings based on form data
+    settings.mail_server = request.form.get('mail_server', settings.mail_server)
+    settings.mail_port = int(request.form.get('mail_port', settings.mail_port))
+    settings.email_username = request.form.get('email_username', settings.email_username)
+    settings.email_password = request.form.get('email_password', settings.email_password)
+    settings.use_tls = request.form.get('use_tls', 'false').lower() == 'true'
+    settings.use_ssl = request.form.get('use_ssl', 'false').lower() == 'true'
+    settings.default_sender_name = request.form.get('default_sender_name', settings.default_sender_name)
+    settings.default_sender_email = request.form.get('default_sender_email', settings.default_sender_email)
+
+    try:
+        # Add to session if it's a new record
+        if not settings.id:
+            db.session.add(settings)
+        db.session.commit()
+        return jsonify({'status': 'success', 'message': 'Email settings updated successfully!'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'status': 'error', 'message': f'Error saving email settings: {str(e)}'}), 500
+
+# Route to handle email settings updates
 @app.route('/update_email_settings', methods=['POST'])
 @login_required
 def update_email_settings():
@@ -256,6 +282,7 @@ def update_email_settings():
         return jsonify({'status': 'error', 'message': 'Email settings not found.'}), 404
 
     try:
+        # Map fields correctly to settings attributes
         if field == 'mail_server':
             settings.mail_server = value
         elif field == 'mail_port':
@@ -275,39 +302,43 @@ def update_email_settings():
         else:
             return jsonify({'status': 'error', 'message': 'Invalid field.'}), 400
 
-        db.session.commit()
-        return jsonify({'status': 'success', 'message': f'{field} updated successfully!'}), 200
+        db.session.commit()  # Commit the changes to the database
+        return jsonify({'status': 'success', 'message': f'{field.replace("_", " ").title()} updated successfully!'}), 200
+
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
-# Route to save email settings
-@app.route('/save_email_settings', methods=['POST'])
+# Route to test email settings
+@app.route('/test_email_settings', methods=['POST'])
 @login_required
-def save_email_settings():
+def test_email_settings():
     if current_user.access_level != 'Admin':
-        flash('You do not have permission to perform this action.', 'error')
-        return redirect(url_for('dashboard'))
+        return jsonify({'status': 'error', 'message': 'You do not have permission to perform this action.'}), 403
 
-    # Fetch the current email settings record
+    # Fetch current email settings from the database
     settings = EmailSettings.query.first()
 
-    # Update settings based on form data
-    settings.mail_server = request.form.get('mail_server', settings.mail_server)
-    settings.mail_port = int(request.form.get('mail_port', settings.mail_port))
-    settings.email_username = request.form.get('email_username', settings.email_username)
-    settings.email_password = request.form.get('email_password', settings.email_password)
-    settings.use_tls = 'use_tls' in request.form
-    settings.use_ssl = 'use_ssl' in request.form
-    settings.default_sender_name = request.form.get('default_sender_name', settings.default_sender_name)
-    settings.default_sender_email = request.form.get('default_sender_email', settings.default_sender_email)
+    if not settings:
+        return jsonify({'status': 'error', 'message': 'Email settings not configured properly.'}), 404
 
-    # Save changes to the database
-    db.session.commit()
-    
-    # Flash a success message
-    flash('Email settings updated successfully.', 'success')
-    return redirect(url_for('dashboard'))
-    
+    # Display current email settings in the flash message for debugging
+    email_info = {
+        'mail_server': settings.mail_server,
+        'mail_port': settings.mail_port,
+        'email_username': settings.email_username,
+        'use_tls': settings.use_tls,
+        'use_ssl': settings.use_ssl,
+        'default_sender_name': settings.default_sender_name,
+        'default_sender_email': settings.default_sender_email
+    }
+
+    # Send test email
+    try:
+        send_user_email('aaron.gomm@outlook.com', 'Test Email', 'This is a test email to verify settings.')
+        return jsonify({'status': 'success', 'settings': email_info})
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': f'Failed to send test email: {e}'}), 500
+        
 # Route to update user profile
 @app.route('/update_profile', methods=['POST'])
 @login_required

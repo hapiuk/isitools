@@ -475,6 +475,7 @@ function enableEmailSaveButton(inputId, buttonId) {
     const input = document.getElementById(inputId);
     const button = document.getElementById(buttonId);
 
+    // Enable button on input change
     input.addEventListener('input', function() {
         if (input.value.trim() !== input.defaultValue.trim()) {
             button.disabled = false;
@@ -484,50 +485,73 @@ function enableEmailSaveButton(inputId, buttonId) {
             button.classList.remove('active');
         }
     });
+
+    // For checkboxes, handle changes separately
+    if (input.type === 'checkbox') {
+        input.addEventListener('change', function() {
+            button.disabled = false;
+            button.classList.add('active');
+        });
+    }
 }
 
 /**
  * Initialize Save Button Logic for Email Settings Fields
  */
 function initializeEmailSaveButtons() {
-    enableEmailSaveButton('mail_server', 'saveMailServer');
-    enableEmailSaveButton('mail_port', 'saveMailPort');
-    enableEmailSaveButton('email_username', 'saveEmailUsername');
-    enableEmailSaveButton('email_password', 'saveEmailPassword');
-    enableEmailSaveButton('use_tls', 'saveUseTls');
-    enableEmailSaveButton('use_ssl', 'saveUseSsl');
-    enableEmailSaveButton('default_sender_name', 'saveDefaultSenderName');
-    enableEmailSaveButton('default_sender_email', 'saveDefaultSenderEmail');
+    const fields = [
+        { id: 'mail_server', button: 'saveMailServer' },
+        { id: 'mail_port', button: 'saveMailPort' },
+        { id: 'email_username', button: 'saveEmailUsername' },
+        { id: 'email_password', button: 'saveEmailPassword' },
+        { id: 'use_tls', button: 'saveUseTls' },
+        { id: 'use_ssl', button: 'saveUseSsl' },
+        { id: 'default_sender_name', button: 'saveDefaultSenderName' },
+        { id: 'default_sender_email', button: 'saveDefaultSenderEmail' }
+    ];
+
+    fields.forEach(({ id, button }) => {
+        enableEmailSaveButton(id, button);
+    });
 }
 
 /**
- * Update Email Setting Item
+ * Update Email Settings Item using AJAX
  * @param {Event} event - The click event on the save button.
- * @param {string} inputId - The ID of the email setting input field.
+ * @param {string} field - The field of the email setting input.
  * @param {string} buttonId - The ID of the save button.
  */
-function updateEmailSetting(event, inputId, buttonId) {
-    event.preventDefault(); // Prevent the default button action
+function updateEmailSettingsItem(event, field, buttonId) {
+    event.preventDefault(); // Prevent default form submission
 
-    const input = document.getElementById(inputId);
+    const input = document.getElementById(field);
     const button = document.getElementById(buttonId);
     const updateMessage = document.getElementById('emailUpdateMessage');
 
-    // AJAX request to update the email setting on the server
-    fetch('/save_email_settings', {
+    // Check if input and button exist
+    if (!input || !button) {
+        console.error(`Input or button not found for field: ${field}`);
+        return;
+    }
+
+    // Prepare data for the request
+    const data = new URLSearchParams({
+        field: field,
+        value: input.type === 'checkbox' ? input.checked.toString() : input.value
+    });
+
+    // AJAX request to update the field on the server
+    fetch('/update_email_settings', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded'
         },
-        body: new URLSearchParams({
-            field: inputId,
-            value: input.type === 'checkbox' ? input.checked : input.value
-        })
+        body: data
     })
     .then(response => response.json())
     .then(data => {
         if (data.status === 'success') {
-            input.defaultValue = input.value;
+            input.defaultValue = input.type === 'checkbox' ? input.checked.toString() : input.value;
             button.disabled = true;
             button.classList.remove('active');
             showEmailUpdateMessage(data.message, 'success');
@@ -558,88 +582,27 @@ function showEmailUpdateMessage(message, type) {
         messageContainer.style.display = 'none';
     }, 3000);
 }
-
-// =====================
-// AJAX Email Settings Update Functions
-// =====================
-
 /**
- * Enable Save Button When Input Changes for Email Settings
- * @param {string} inputId - The ID of the input field.
- * @param {string} buttonId - The ID of the save button.
+ * Test Email Settings
  */
-function enableEmailSaveButton(inputId, buttonId) {
-    const input = document.getElementById(inputId);
-    const button = document.getElementById(buttonId);
-
-    input.addEventListener('input', function() {
-        if (input.value.trim() !== input.defaultValue.trim()) {
-            button.disabled = false;
-            button.classList.add('active');
-        } else {
-            button.disabled = true;
-            button.classList.remove('active');
-        }
-    });
-
-    if (input.type === 'checkbox') {
-        input.addEventListener('change', function() {
-            button.disabled = false;
-            button.classList.add('active');
-        });
-    }
-}
-
-/**
- * Update Email Settings Item
- * @param {Event} event - The click event on the save button.
- * @param {string} inputId - The ID of the input field.
- * @param {string} buttonId - The ID of the save button.
- */
-function updateEmailSettingsItem(event, inputId, buttonId) {
-    event.preventDefault(); // Prevent the default button action
-
-    const input = document.getElementById(inputId);
-    const button = document.getElementById(buttonId);
-
-    // AJAX request to update the field on the server
-    fetch('/update_email_settings', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded'
-        },
-        body: new URLSearchParams({
-            field: inputId,
-            value: input.type === 'checkbox' ? input.checked.toString() : input.value
-        })
+function testEmailSettings() {
+    // Fetch current email settings
+    fetch('/test_email_settings', {
+        method: 'POST'
     })
     .then(response => response.json())
     .then(data => {
         if (data.status === 'success') {
-            input.defaultValue = input.value;
-            button.disabled = true;
-            button.classList.remove('active');
-            flashMessage(data.message, 'success');
+            // Show the current settings in the flash message for debugging
+            showEmailUpdateMessage(`Test email sent using settings: ${JSON.stringify(data.settings)}`, 'debug');
         } else {
-            flashMessage(data.message, 'error');
+            showEmailUpdateMessage(data.message, 'error');
         }
     })
     .catch(error => {
-        console.error('Error updating email setting:', error);
-        flashMessage('An error occurred. Please try again.', 'error');
+        console.error('Error testing email settings:', error);
+        showEmailUpdateMessage('An error occurred while testing email settings. Please try again.', 'error');
     });
-}
-
-// Initialize Save Button Logic for Email Settings Fields
-function initializeEmailSaveButtons() {
-    enableEmailSaveButton('mail_server', 'saveMailServer');
-    enableEmailSaveButton('mail_port', 'saveMailPort');
-    enableEmailSaveButton('email_username', 'saveEmailUsername');
-    enableEmailSaveButton('email_password', 'saveEmailPassword');
-    enableEmailSaveButton('use_tls', 'saveUseTls');
-    enableEmailSaveButton('use_ssl', 'saveUseSsl');
-    enableEmailSaveButton('default_sender_name', 'saveDefaultSenderName');
-    enableEmailSaveButton('default_sender_email', 'saveDefaultSenderEmail');
 }
 
 // =====================

@@ -893,3 +893,25 @@ body {
     font-size: 16px;
     margin-left: 10px; /* Aligns with the checkbox */
 }
+/* Styling for the Test Email Button */
+.test-email-button {
+    width: 100%;
+    padding: 15px;
+    font-size: 16px;
+    background-color: #007bff; /* Blue color for testing/debugging */
+    color: white;
+    border: none;
+    margin-top: 20px;
+    cursor: pointer;
+    border-radius: 0; /* Square edges */
+    transition: background-color 0.3s ease;
+}
+
+.test-email-button:hover {
+    background-color: #0056b3; /* Darker blue on hover */
+}
+
+/* Flash message for debugging */
+.flash-message.debug {
+    background-color: #007bff; /* Blue color for debugging */
+}
