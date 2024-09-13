@@ -1,26 +1,31 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <!-- Meta tags for character encoding and responsiveness -->
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Page Title -->
     <title>Dashboard</title>
-    <link rel="stylesheet" href="static/css/styles.css">
+    <!-- Link to the main CSS stylesheet -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
 </head>
 <body>
     <!-- Navbar -->
     <nav class="navbar">
-        <img src="static/images/logos/WhiteLogo.png" alt="Logo" class="navbar-logo">
+        <!-- Company logo -->
+        <img src="{{ url_for('static', filename='images/logos/WhiteLogo.png') }}" alt="Logo" class="navbar-logo">
+        <!-- User menu with dropdown -->
         <div class="user-menu">
-            <button class="user-button">Firstname Lastname</button>
+            <button class="user-button">{{ current_user.first_name }} {{ current_user.last_name }}</button>
             <div class="dropdown-menu">
                 <a href="#" onclick="openModal('profileModal')">My Profile</a>
-                <a href="/logout" class="logout-link">Logout</a> <!-- Updated with red hue styling -->
+                <a href="{{ url_for('logout') }}" class="logout-link">Logout</a>
             </div>
         </div>
     </nav>
 
-    <!-- Example Flash Message Block -->
+    <!-- Flash Messages -->
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
             {% for category, message in messages %}
@@ -36,448 +41,510 @@
     <div class="dashboard-container">
         <!-- PUWER Block -->
         <div class="dashboard-block puwer-block">
+            <!-- Title Section -->
             <div class="main-area title-block">
-                <img src="static/images/icons/PUWER.png" alt="PUWER" class="block-icon">
+                <img src="{{ url_for('static', filename='images/icons/PUWER.png') }}" alt="PUWER" class="block-icon">
                 <span>PUWER Reporting</span>
             </div>
+            <!-- Buttons for AECOM and General PUWER Reports -->
             <button class="cut-square aecom-button" onclick="openModal('aecomModal')" data-tooltip="AECOM">
-                <img src="static/images/icons/AECOM.png" alt="AECOM">
+                <img src="{{ url_for('static', filename='images/icons/AECOM.png') }}" alt="AECOM">
             </button>
             <button class="cut-square general-button" onclick="openModal('puwerModal')" data-tooltip="General">
-                <img src="static/images/icons/processpdfexcel.png" alt="General">
+                <img src="{{ url_for('static', filename='images/icons/processpdfexcel.png') }}" alt="General">
             </button>
         </div>
 
         <!-- LOLER Block -->
         <div class="dashboard-block loler-block">
+            <!-- Title Section -->
             <div class="main-area title-block">
-                <img src="static/images/icons/LOLER.png" alt="LOLER" class="block-icon">
+                <img src="{{ url_for('static', filename='images/icons/LOLER.png') }}" alt="LOLER" class="block-icon">
                 <span>LOLER Reporting</span>
             </div>
-            <button class="cut-square invisible-button"></button> <!-- Invisible button to maintain layout -->
+            <!-- Placeholder Button for Layout Consistency -->
+            <button class="cut-square invisible-button"></button>
+            <!-- Button for General LOLER Reports -->
             <button class="cut-square general-button" onclick="openModal('lolerModal')" data-tooltip="General">
-                <img src="static/images/icons/processpdfexcel.png" alt="General">
+                <img src="{{ url_for('static', filename='images/icons/processpdfexcel.png') }}" alt="General">
             </button>
         </div>
 
         <!-- Links Panel at the Bottom -->
         <div class="dashboard-block links-panel">
+            <!-- External Links -->
             <a href="https://live.servicesight.com" target="_blank" class="cut-square link-button" data-tooltip="Digital Reporting System">
-                <img src="static/images/icons/reporting.png" alt="Digital Reporting System">
+                <img src="{{ url_for('static', filename='images/icons/reporting.png') }}" alt="Digital Reporting System">
             </a>
             <a href="https://central.samsungknox.com/login-navigator" target="_blank" class="cut-square link-button" data-tooltip="MDM">
-                <img src="static/images/icons/mdm.png" alt="MDM">
+                <img src="{{ url_for('static', filename='images/icons/mdm.png') }}" alt="MDM">
             </a>
             <a href="https://admin.microsoft.com" target="_blank" class="cut-square link-button" data-tooltip="Microsoft Admin Center">
-                <img src="static/images/icons/admin-center.png" alt="Microsoft Admin Center">
+                <img src="{{ url_for('static', filename='images/icons/admin-center.png') }}" alt="Microsoft Admin Center">
             </a>
+            <!-- System Settings Button -->
             <button class="dashboard-settings-button" onclick="openModal('settingsModal')" data-tooltip="System Settings">
-                <img src="static/images/icons/cog-settings.svg" alt="System Settings">
+                <img src="{{ url_for('static', filename='images/icons/cog-settings.svg') }}" alt="System Settings">
             </button>
         </div>
+    </div>
 
-        <!-- Modals -->
-        <div id="aecomModal" class="modal">
-            <div class="modal-content">
-                <span class="close" onclick="closeModal('aecomModal')">&times;</span>
-                <h2>Process AECOM Reports</h2>
-                <form class="modal-form">
-                    <input type="text" placeholder="Business Entity" class="form-input">
-                    <div class="file-upload">
-                        <button type="button" class="upload-button">Upload</button>
-                        <span class="file-count">0 files selected</span>
+    <!-- Modals -->
+    <!-- General PUWER Modal -->
+    <div id="puwerModal" class="modal">
+        <div class="modal-content">
+            <!-- Close Button -->
+            <span class="close" onclick="closeModal('puwerModal')">&times;</span>
+            <!-- Modal Title -->
+            <h2>Process PUWER Reports</h2>
+            <!-- Form for Processing Reports -->
+            <form class="modal-form" action="{{ url_for('process_puwer_reports') }}" method="POST" enctype="multipart/form-data">
+                <!-- Site Name Input -->
+                <input type="text" name="site_name" placeholder="Site Name" class="form-input" required>
+                <!-- File Upload Section -->
+                <div class="file-upload">
+                    <input type="file" name="report_files" multiple class="file-input" required>
+                    <span class="file-count">0 files selected</span>
+                </div>
+                <!-- Submit Button -->
+                <button type="submit" class="process-button">Process Reports</button>
+            </form>
+            <!-- Button to View Historic Reports -->
+            <button type="button" class="view-historic-button" onclick="openModal('puwerHistoricReportsModal')">View Historic Reports</button>
+        </div>
+    </div>
+
+    <!-- General LOLER Modal -->
+    <div id="lolerModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('lolerModal')">&times;</span>
+            <h2>Process LOLER Reports</h2>
+            <form class="modal-form" action="{{ url_for('process_loler_reports') }}" method="POST" enctype="multipart/form-data">
+                <input type="text" name="site_name" placeholder="Site Name" class="form-input" required>
+                <div class="file-upload">
+                    <input type="file" name="report_files" multiple class="file-input" required>
+                    <span class="file-count">0 files selected</span>
+                </div>
+                <button type="submit" class="process-button">Process Reports</button>
+            </form>
+            <button type="button" class="view-historic-button" onclick="openModal('lolerHistoricReportsModal')">View Historic Reports</button>
+        </div>
+    </div>
+
+    <!-- AECOM Modal -->
+    <div id="aecomModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('aecomModal')">&times;</span>
+            <h2>Process AECOM Reports</h2>
+            <form class="modal-form" action="{{ url_for('process_aecom_reports') }}" method="POST" enctype="multipart/form-data">
+                <input type="text" name="business_entity" placeholder="Business Entity" class="form-input" required>
+                <div class="file-upload">
+                    <input type="file" name="report_files" multiple class="file-input" required>
+                    <span class="file-count">0 files selected</span>
+                </div>
+                <button type="submit" class="process-button">Process Reports</button>
+            </form>
+            <button type="button" class="view-historic-button" onclick="openModal('historicReportsModal')">View Historic Reports</button>
+        </div>
+    </div>
+
+    <!-- Historic Reports Modals -->
+    <!-- AECOM Historic Reports Modal -->
+    <div id="historicReportsModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('historicReportsModal')">&times;</span>
+            <h2>AECOM Reports</h2>
+            <input type="text" id="searchInput" placeholder="Search reports..." class="form-input">
+            <div class="table-container">
+                <table class="reports-table">
+                    <thead>
+                        <tr>
+                            <th>Site Name</th>
+                            <th>Items Inspected</th>
+                            <th>Visit Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="aecomReportsTableBody">
+                        <!-- Report rows will be populated dynamically -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- PUWER Historic Reports Modal -->
+    <div id="puwerHistoricReportsModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('puwerHistoricReportsModal')">&times;</span>
+            <h2>PUWER Reports</h2>
+            <input type="text" id="puwerSearchInput" placeholder="Search reports..." class="form-input">
+            <div class="table-container">
+                <table class="reports-table">
+                    <thead>
+                        <tr>
+                            <th>Site Name</th>
+                            <th>Items Inspected</th>
+                            <th>Visit Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="puwerReportsTableBody">
+                        <!-- Report rows will be populated dynamically -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- LOLER Historic Reports Modal -->
+    <div id="lolerHistoricReportsModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('lolerHistoricReportsModal')">&times;</span>
+            <h2>LOLER Reports</h2>
+            <input type="text" id="lolerSearchInput" placeholder="Search reports..." class="form-input">
+            <div class="table-container">
+                <table class="reports-table">
+                    <thead>
+                        <tr>
+                            <th>Site Name</th>
+                            <th>Items Inspected</th>
+                            <th>Visit Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="lolerReportsTableBody">
+                        <!-- Report rows will be populated dynamically -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteConfirmModal" class="modal delete-confirm-modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('deleteConfirmModal')">&times;</span>
+            <h2>Type "Delete" to confirm</h2>
+            <div class="delete-challenge">
+                <input type="text" id="deleteInput" class="delete-input" placeholder="Type Delete">
+                <button class="delete-confirm-button" id="confirmDeleteButton" disabled>Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Settings Modal -->
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('settingsModal')">&times;</span>
+            <h2>System Settings</h2>
+            <div class="settings-block">
+                <button class="settings-modal-button" onclick="openModal('systemUsersModal')" data-tooltip="System Users">
+                    <img src="{{ url_for('static', filename='images/icons/users.png') }}" alt="System Users">
+                </button>
+                <button class="settings-modal-button" onclick="openModal('systemContactsModal')" data-tooltip="System Contacts">
+                    <img src="{{ url_for('static', filename='images/icons/contacts.png') }}" alt="System Contacts">
+                </button>
+                <button class="settings-modal-button" onclick="openModal('mailSettingsModal')" data-tooltip="Mail Settings">
+                    <img src="{{ url_for('static', filename='images/icons/mailsettings.png') }}" alt="Mail Settings">
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Users Modal -->
+    <div id="systemUsersModal" class="modal system-modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('systemUsersModal')">&times;</span>
+            <h2>System Users</h2>
+
+            <!-- Search Input -->
+            <input type="text" id="userSearchInput" class="profile-input" placeholder="Search users...">
+            
+            <!-- User Table -->
+            <div class="table-container">
+                <table class="users-table">
+                    <thead>
+                        <tr>
+                            <th>First Name</th>
+                            <th>Last Name</th>
+                            <th>Email Address</th>
+                            <th>Department</th>
+                            <th>Location</th>
+                            <th>Access Level</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTableBody">
+                        <!-- User rows will be dynamically inserted here -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination Controls -->
+            <div class="pagination">
+                <button class="page-button previous-button" onclick="changePage(-1, 'user')">Previous</button>
+                <span id="userPageNumber">1</span>
+                <button class="page-button next-button" onclick="changePage(1, 'user')">Next</button>
+            </div>
+
+            <!-- Create User Button -->
+            <button class="create-user-button" onclick="openModal('createUserModal')">Create User</button>
+        </div>
+    </div>
+
+
+    <!-- Create User Modal -->
+    <div id="createUserModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('createUserModal')">&times;</span>
+            <h2>Create New User</h2>
+            <form class="modal-form" action="{{ url_for('create_user') }}" method="POST">
+                <input type="text" name="first_name" class="profile-input" placeholder="First Name" required>
+                <input type="text" name="last_name" class="profile-input" placeholder="Last Name" required>
+                <input type="email" name="email" class="profile-input" placeholder="Email Address" required>
+                <input type="text" name="department" class="profile-input" placeholder="Department" required>
+                <input type="text" name="location" class="profile-input" placeholder="Location" required>
+                <!-- Access Level Dropdown -->
+                <select name="access_level" class="profile-input" required>
+                    <option value="Admin">Admin</option>
+                    <option value="User">User</option>
+                </select>
+                <button type="submit" class="modal-button">Create User</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal for User Deletion -->
+    <div id="deleteConfirmModalUser" class="modal delete-confirm-modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('deleteConfirmModalUser')">&times;</span>
+            <h2>Type "Delete" to confirm</h2>
+            <div class="delete-challenge">
+                <input type="text" id="deleteInputUser" class="delete-input" placeholder="Type Delete">
+                <button class="delete-confirm-button" id="confirmDeleteButtonUser" disabled>Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Contacts Modal -->
+    <div id="systemContactsModal" class="modal system-modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('systemContactsModal')">&times;</span>
+            <h2>System Contacts</h2>
+            <!-- Search Input -->
+            <input type="text" id="contactSearchInput" class="profile-input" placeholder="Search contacts...">
+            <!-- Contacts Table -->
+            <div class="table-container">
+                <table class="contacts-table">
+                    <thead>
+                        <tr>
+                            <th>First Name</th>
+                            <th>Last Name</th>
+                            <th>Email Address</th>
+                            <th>Contact Number</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="contactsTableBody">
+                        <!-- Contact rows will be populated dynamically -->
+                    </tbody>
+                </table>
+            </div>
+            <!-- Pagination Controls -->
+            <div class="pagination">
+                <button class="page-button previous-button" onclick="changePage(-1, 'contact')">Previous</button>
+                <span id="contactPageNumber">1</span>
+                <button class="page-button next-button" onclick="changePage(1, 'contact')">Next</button>
+            </div>
+            <!-- Create Contact Button -->
+            <button class="create-contact-button" onclick="openModal('createContactModal')">Create Contact</button>
+        </div>
+    </div>
+
+    <!-- Create Contact Modal -->
+    <div id="createContactModal" class="modal system-modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('createContactModal')">&times;</span>
+            <h2>Create New Contact</h2>
+            <form class="modal-form" action="{{ url_for('create_contact') }}" method="POST">
+                <input type="text" name="first_name" class="profile-input" placeholder="First Name" required>
+                <input type="text" name="last_name" class="profile-input" placeholder="Last Name" required>
+                <input type="email" name="email" class="profile-input" placeholder="Email Address" required>
+                <input type="text" name="contact_number" class="profile-input" placeholder="Contact Number" required>
+                <button type="submit" class="modal-button">Create Contact</button>
+            </form>
+        </div>
+    </div>
+
+<!-- Email Settings Modal -->
+<div id="mailSettingsModal" class="modal">
+    <div class="modal-content">
+        <!-- Close Button -->
+        <span class="close" onclick="closeModal('mailSettingsModal')">&times;</span>
+        <!-- Modal Title -->
+        <h2>Email Settings</h2>
+        <form class="modal-form">
+            <!-- Mail Server -->
+            <div class="profile-item">
+                <form class="profile-form" onsubmit="updateEmailSettingsItem(event, 'mail_server', 'saveMailServer')">
+                    <input type="text" id="mail_server" class="profile-input" placeholder="Mail Server" value="{{ email_settings.mail_server }}" required>
+                    <button type="submit" id="saveMailServer" class="save-button" disabled>Save</button>
+                </form>
+            </div>
+
+            <!-- Mail Port -->
+            <div class="profile-item">
+                <form class="profile-form" onsubmit="updateEmailSettingsItem(event, 'mail_port', 'saveMailPort')">
+                    <input type="number" id="mail_port" class="profile-input" placeholder="Mail Port" value="{{ email_settings.mail_port }}" required>
+                    <button type="submit" id="saveMailPort" class="save-button" disabled>Save</button>
+                </form>
+            </div>
+
+            <!-- Email Username -->
+            <div class="profile-item">
+                <form class="profile-form" onsubmit="updateEmailSettingsItem(event, 'email_username', 'saveEmailUsername')">
+                    <input type="text" id="email_username" class="profile-input" placeholder="Email Username" value="{{ email_settings.email_username }}" required>
+                    <button type="submit" id="saveEmailUsername" class="save-button" disabled>Save</button>
+                </form>
+            </div>
+
+            <!-- Email Password -->
+            <div class="profile-item">
+                <form class="profile-form" onsubmit="updateEmailSettingsItem(event, 'email_password', 'saveEmailPassword')">
+                    <input type="password" id="email_password" class="profile-input" placeholder="Email Password" value="{{ email_settings.email_password }}" required>
+                    <button type="submit" id="saveEmailPassword" class="save-button" disabled>Save</button>
+                </form>
+            </div>
+
+            <!-- Use TLS -->
+            <div class="profile-item">
+                <form class="profile-form" onsubmit="updateEmailSettingsItem(event, 'use_tls', 'saveUseTls')">
+                    <div style="display: flex; align-items: center; width: 100%;">
+                        <label for="use_tls" style="flex: 1; text-align: left; padding: 12px 0;">Use TLS</label>
+                        <input type="checkbox" id="use_tls" class="profile-input" style="width: auto; margin-right: 10px;" {% if email_settings.use_tls %}checked{% endif %}>
+                        <button type="submit" id="saveUseTls" class="save-button" style="flex-shrink: 0;" disabled>Save</button>
                     </div>
-                    <button type="submit" class="process-button">Process Reports</button>
                 </form>
-                <button type="button" class="view-historic-button" onclick="openModal('historicReportsModal')">View Historic Reports</button>
             </div>
-        </div>
 
-        <!-- General PUWER Modal -->
-        <div id="puwerModal" class="modal">
-            <div class="modal-content">
-                <span class="close" onclick="closeModal('puwerModal')">&times;</span>
-                <h2>Process PUWER Reports</h2>
-                <form class="modal-form">
-                    <input type="text" placeholder="Site Name" class="form-input">
-                    <div class="file-upload">
-                        <button type="button" class="upload-button">Upload</button>
-                        <span class="file-count">0 files selected</span>
+            <!-- Use SSL -->
+            <div class="profile-item">
+                <form class="profile-form" onsubmit="updateEmailSettingsItem(event, 'use_ssl', 'saveUseSsl')">
+                    <div style="display: flex; align-items: center; width: 100%;">
+                        <label for="use_ssl" style="flex: 1; text-align: left; padding: 12px 0;">Use SSL</label>
+                        <input type="checkbox" id="use_ssl" class="profile-input" style="width: auto; margin-right: 10px;" {% if email_settings.use_ssl %}checked{% endif %}>
+                        <button type="submit" id="saveUseSsl" class="save-button" style="flex-shrink: 0;" disabled>Save</button>
                     </div>
-                    <button type="submit" class="process-button">Process Reports</button>
-                </form>
-                <button type="button" class="view-historic-button" onclick="openModal('puwerHistoricReportsModal')">View Historic Reports</button>
-            </div>
-        </div>
-
-        <!-- General LOLER Modal -->
-        <div id="lolerModal" class="modal">
-            <div class="modal-content">
-                <span class="close" onclick="closeModal('lolerModal')">&times;</span>
-                <h2>Process LOLER Reports</h2>
-                <form class="modal-form">
-                    <input type="text" placeholder="Site Name" class="form-input">
-                    <div class="file-upload">
-                        <button type="button" class="upload-button">Upload</button>
-                        <span class="file-count">0 files selected</span>
-                    </div>
-                    <button type="submit" class="process-button">Process Reports</button>
-                </form>
-                <button type="button" class="view-historic-button" onclick="openModal('lolerHistoricReportsModal')">View Historic Reports</button>
-            </div>
-        </div>
-
-        <!-- Historic Reports Modals -->
-        <div id="historicReportsModal" class="modal">
-            <div class="modal-content">
-                <span class="close" onclick="closeModal('historicReportsModal')">&times;</span>
-                <h2>AECOM Reports</h2>
-                <input type="text" id="searchInput" placeholder="Search reports..." class="form-input">
-                <div class="table-container">
-                    <table class="reports-table">
-                        <thead>
-                            <tr>
-                                <th>Site Name</th>
-                                <th>Items Inspected</th>
-                                <th>Visit Date</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="aecomReportsTableBody">
-                            <tr>
-                                <td>Site 1</td>
-                                <td>15</td>
-                                <td>2023-09-01</td>
-                                <td>
-                                    <button class="download-button">Download</button>
-                                    <button class="delete-button" onclick="showDeleteConfirm(1, 'aecom')">Delete</button>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <div id="puwerHistoricReportsModal" class="modal">
-            <div class="modal-content">
-                <span class="close" onclick="closeModal('puwerHistoricReportsModal')">&times;</span>
-                <h2>PUWER Reports</h2>
-                <input type="text" id="puwerSearchInput" placeholder="Search reports..." class="form-input">
-                <div class="table-container">
-                    <table class="reports-table">
-                        <thead>
-                            <tr>
-                                <th>Site Name</th>
-                                <th>Items Inspected</th>
-                                <th>Visit Date</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="puwerReportsTableBody">
-                            <tr>
-                                <td>Site 1</td>
-                                <td>20</td>
-                                <td>2023-09-02</td>
-                                <td>
-                                    <button class="download-button">Download</button>
-                                    <button class="delete-button" onclick="showDeleteConfirm(1, 'puwer')">Delete</button>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <div id="lolerHistoricReportsModal" class="modal">
-            <div class="modal-content">
-                <span class="close" onclick="closeModal('lolerHistoricReportsModal')">&times;</span>
-                <h2>LOLER Reports</h2>
-                <input type="text" id="lolerSearchInput" placeholder="Search reports..." class="form-input">
-                <div class="table-container">
-                    <table class="reports-table">
-                        <thead>
-                            <tr>
-                                <th>Site Name</th>
-                                <th>Items Inspected</th>
-                                <th>Visit Date</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="lolerReportsTableBody">
-                            <tr>
-                                <td>Site 1</td>
-                                <td>30</td>
-                                <td>2023-09-03</td>
-                                <td>
-                                    <button class="download-button">Download</button>
-                                    <button class="delete-button" onclick="showDeleteConfirm(1, 'loler')">Delete</button>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-
-        <!-- Delete Confirmation Modal -->
-        <div id="deleteConfirmModal" class="modal">
-            <div class="modal-content">
-                <span class="close" onclick="closeModal('deleteConfirmModal')">&times;</span>
-                <h2>Type "Delete" to confirm</h2>
-                <div class="delete-challenge">
-                    <input type="text" id="deleteInput" class="delete-input" placeholder="Type Delete">
-                    <button class="delete-confirm-button" id="confirmDeleteButton" disabled>Delete</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- System Settings Modal -->
-        <div id="settingsModal" class="modal">
-            <div class="modal-content">
-                <span class="close" onclick="closeModal('settingsModal')">&times;</span>
-                <h2>System Settings</h2>
-                <div class="settings-block">
-                    <button class="settings-modal-button" onclick="openModal('systemUsersModal')" data-tooltip="System Users">
-                        <img src="static/images/icons/users.png" alt="System Users">
-                    </button>
-                    <button class="settings-modal-button" onclick="openModal('systemContactsModal')" data-tooltip="System Contacts">
-                        <img src="static/images/icons/contacts.png" alt="System Contacts">
-                    </button>
-                    <button class="settings-modal-button" onclick="openModal('mailSettingsModal')" data-tooltip="Mail Settings">
-                        <img src="static/images/icons/mailsettings.png" alt="Mail Settings">
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- System Users Modal -->
-        <div id="systemUsersModal" class="modal">
-            <div class="modal-content">
-                <span class="close" onclick="closeModal('systemUsersModal')">&times;</span>
-                <h2>System Users</h2>
-                <!-- Search Input -->
-                <input type="text" id="userSearchInput" class="profile-input" placeholder="Search users...">
-                <!-- User Table -->
-                <div class="table-container">
-                    <table class="users-table">
-                        <thead>
-                            <tr>
-                                <th>First Name</th>
-                                <th>Last Name</th>
-                                <th>Email Address</th>
-                                <th>Department</th>
-                                <th>Location</th>
-                                <th>Access Level</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="usersTableBody">
-                            <!-- Dummy Data Row for Current User -->
-                            <tr>
-                                <td>John</td>
-                                <td>Doe</td>
-                                <td>admin@example.com</td>
-                                <td>IT</td>
-                                <td>Head Office</td>
-                                <td>Admin</td>
-                                <td>
-                                    <button class="delete-button" onclick="showDeleteConfirm(1, 'user')">Delete</button>
-                                </td>
-                            </tr>
-                            <!-- Additional dummy rows can be added here -->
-                        </tbody>
-                    </table>
-                </div>
-                <!-- Pagination Controls -->
-                <div class="pagination">
-                    <button class="page-button previous-button" onclick="changePage(-1, 'user')">Previous</button>
-                    <span id="userPageNumber">1</span>
-                    <button class="page-button next-button" onclick="changePage(1, 'user')">Next</button>
-                </div>
-                <!-- Create User Button -->
-                <button class="create-user-button" onclick="openModal('createUserModal')">Create User</button>
-            </div>
-        </div>
-
-        <!-- Create User Modal -->
-        <div id="createUserModal" class="modal">
-            <div class="modal-content">
-                <span class="close" onclick="closeModal('createUserModal')">&times;</span>
-                <h2>Create New User</h2>
-                <form class="modal-form">
-                    <input type="text" id="newFirstName" class="profile-input" placeholder="First Name">
-                    <input type="text" id="newLastName" class="profile-input" placeholder="Last Name">
-                    <input type="text" id="newEmail" class="profile-input" placeholder="Email Address">
-                    <input type="text" id="newDepartment" class="profile-input" placeholder="Department">
-                    <input type="text" id="newLocation" class="profile-input" placeholder="Location">
-                    <!-- Access Level Dropdown -->
-                    <select id="newAccessLevel" class="profile-input">
-                        <option value="Admin">Admin</option>
-                        <option value="User">User</option>
-                    </select>
-                    <button type="submit" class="modal-button">Create User</button>
                 </form>
             </div>
-        </div>
 
-        <!-- Delete Confirmation Modal for User Deletion -->
-        <div id="deleteConfirmModalUser" class="modal">
-            <div class="modal-content">
-                <span class="close" onclick="closeModal('deleteConfirmModalUser')">&times;</span>
-                <h2>Type "Delete" to confirm</h2>
-                <div class="delete-challenge">
-                    <input type="text" id="deleteInputUser" class="delete-input" placeholder="Type Delete">
-                    <button class="delete-confirm-button" id="confirmDeleteButtonUser" disabled>Delete</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- System Contacts Modal -->
-        <div id="systemContactsModal" class="modal">
-            <div class="modal-content">
-                <span class="close" onclick="closeModal('systemContactsModal')">&times;</span>
-                <h2>System Contacts</h2>
-                <!-- Search Input -->
-                <input type="text" id="contactSearchInput" class="profile-input" placeholder="Search contacts...">
-                <!-- Contacts Table -->
-                <div class="table-container">
-                    <table class="contacts-table">
-                        <thead>
-                            <tr>
-                                <th>First Name</th>
-                                <th>Last Name</th>
-                                <th>Email Address</th>
-                                <th>Contact Number</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="contactsTableBody">
-                            <!-- Dummy Data Row for Current Contact -->
-                            <tr>
-                                <td>Jane</td>
-                                <td>Doe</td>
-                                <td>jane.doe@example.com</td>
-                                <td>+123456789</td>
-                                <td>
-                                    <button class="delete-button" onclick="showDeleteConfirm(1, 'contact')">Delete</button>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-                <!-- Pagination Controls -->
-                <div class="pagination">
-                    <button class="page-button previous-button" onclick="changePage(-1, 'contact')">Previous</button>
-                    <span id="contactPageNumber">1</span>
-                    <button class="page-button next-button" onclick="changePage(1, 'contact')">Next</button>
-                </div>
-                <!-- Create Contact Button -->
-                <button class="create-contact-button" onclick="openModal('createContactModal')">Create Contact</button>
-            </div>
-        </div>
-
-        <!-- Create Contact Modal -->
-        <div id="createContactModal" class="modal">
-            <div class="modal-content">
-                <span class="close" onclick="closeModal('createContactModal')">&times;</span>
-                <h2>Create New Contact</h2>
-                <form class="modal-form">
-                    <input type="text" id="newContactFirstName" class="profile-input" placeholder="First Name">
-                    <input type="text" id="newContactLastName" class="profile-input" placeholder="Last Name">
-                    <input type="text" id="newContactEmail" class="profile-input" placeholder="Email Address">
-                    <input type="text" id="newContactNumber" class="profile-input" placeholder="Contact Number">
-                    <button type="submit" class="modal-button">Create Contact</button>
+            <!-- Default Sender Name -->
+            <div class="profile-item">
+                <form class="profile-form" onsubmit="updateEmailSettingsItem(event, 'default_sender_name', 'saveDefaultSenderName')">
+                    <input type="text" id="default_sender_name" class="profile-input" placeholder="Default Sender Name" value="{{ email_settings.default_sender_name }}" required>
+                    <button type="submit" id="saveDefaultSenderName" class="save-button" disabled>Save</button>
                 </form>
             </div>
-        </div>
 
-        <!-- Mail Settings Modal -->
-        <div id="mailSettingsModal" class="modal">
-            <div class="modal-content">
-                <span class="close" onclick="closeModal('mailSettingsModal')">&times;</span>
-                <h2>Email Settings</h2>
-                <form class="modal-form">
-                    <input type="text" id="mailServer" class="profile-input" placeholder="Mail Server" value="smtp.example.com">
-                    <input type="number" id="mailPort" class="profile-input" placeholder="Mail Port" value="587">
-                    <input type="text" id="emailUsername" class="profile-input" placeholder="Email Username" value="user@example.com">
-                    <input type="password" id="emailPassword" class="profile-input" placeholder="Email Password" value="password123">
-                    <select id="useTLS" class="profile-input">
-                        <option value="true" selected>Use TLS - True</option>
-                        <option value="false">Use TLS - False</option>
-                    </select>
-                    <select id="useSSL" class="profile-input">
-                        <option value="true">Use SSL - True</option>
-                        <option value="false" selected>Use SSL - False</option>
-                    </select>
-                    <input type="text" id="defaultSenderName" class="profile-input" placeholder="Default Sender Name" value="Admin">
-                    <input type="email" id="defaultSenderEmail" class="profile-input" placeholder="Default Sender Email" value="admin@example.com">
-                    <button type="submit" class="modal-button">Save Settings</button>
+            <!-- Default Sender Email -->
+            <div class="profile-item">
+                <form class="profile-form" onsubmit="updateEmailSettingsItem(event, 'default_sender_email', 'saveDefaultSenderEmail')">
+                    <input type="email" id="default_sender_email" class="profile-input" placeholder="Default Sender Email" value="{{ email_settings.default_sender_email }}" required>
+                    <button type="submit" id="saveDefaultSenderEmail" class="save-button" disabled>Save</button>
                 </form>
             </div>
-        </div>
+        </form>
+    </div>
+</div>
 
-        <!-- My Profile Modal -->
-        <div id="profileModal" class="modal">
-            <div class="modal-content">
-                <span class="close" onclick="closeModal('profileModal')">&times;</span>
-                <h2>My Profile</h2>
-                <div class="profile-item">
-                    <input type="text" id="firstNameInput" class="profile-input" placeholder="First Name" value="John">
-                    <button class="save-button" id="saveFirstName" disabled>Save</button>
-                </div>
-                <div class="profile-item">
-                    <input type="text" id="lastNameInput" class="profile-input" placeholder="Last Name" value="Doe">
-                    <button class="save-button" id="saveLastName" disabled>Save</button>
-                </div>
-                <div class="profile-item">
-                    <input type="text" id="emailInput" class="profile-input" placeholder="Email" value="johndoe@example.com">
-                    <button class="save-button" id="saveEmail" disabled>Save</button>
-                </div>
-                <div class="profile-item">
-                    <input type="text" id="departmentInput" class="profile-input" placeholder="Department" value="IT">
-                    <button class="save-button" id="saveDepartment" disabled>Save</button>
-                </div>
-                <div class="profile-item">
-                    <input type="text" id="locationInput" class="profile-input" placeholder="Location" value="Head Office">
-                    <button class="save-button" id="saveLocation" disabled>Save</button>
-                </div>
+
+
+    <!-- My Profile Modal -->
+    <div id="profileModal" class="modal system-modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('profileModal')">&times;</span>
+            <h2>My Profile</h2>
+
+            <!-- First Name Update -->
+            <div class="profile-item">
+                <form class="profile-form" onsubmit="updateProfileItem(event, 'firstNameInput', 'saveFirstName')">
+                    <input type="text" id="firstNameInput" class="profile-input" placeholder="First Name" value="{{ current_user.first_name }}">
+                    <button type="submit" class="save-button" id="saveFirstName" disabled>Save</button>
+                </form>
             </div>
-        </div>
 
-        <!-- Footer -->
-        <footer class="footer">
-            <p>&copy; Industrial Safety Inspections and Aaron Gomm. UI designed by Aaron Gomm.</p>
+            <!-- Repeat the same structure for Last Name, Email, Department, and Location -->
+            <!-- Last Name Update -->
+            <div class="profile-item">
+                <form class="profile-form" onsubmit="updateProfileItem(event, 'lastNameInput', 'saveLastName')">
+                    <input type="text" id="lastNameInput" class="profile-input" placeholder="Last Name" value="{{ current_user.last_name }}">
+                    <button type="submit" class="save-button" id="saveLastName" disabled>Save</button>
+                </form>
+            </div>
+
+            <!-- Email Update -->
+            <div class="profile-item">
+                <form class="profile-form" onsubmit="updateProfileItem(event, 'emailInput', 'saveEmail')">
+                    <input type="email" id="emailInput" class="profile-input" placeholder="Email" value="{{ current_user.email }}">
+                    <button type="submit" class="save-button" id="saveEmail" disabled>Save</button>
+                </form>
+            </div>
+
+            <!-- Department Update -->
+            <div class="profile-item">
+                <form class="profile-form" onsubmit="updateProfileItem(event, 'departmentInput', 'saveDepartment')">
+                    <input type="text" id="departmentInput" class="profile-input" placeholder="Department" value="{{ current_user.department }}">
+                    <button type="submit" class="save-button" id="saveDepartment" disabled>Save</button>
+                </form>
+            </div>
+
+            <!-- Location Update -->
+            <div class="profile-item">
+                <form class="profile-form" onsubmit="updateProfileItem(event, 'locationInput', 'saveLocation')">
+                    <input type="text" id="locationInput" class="profile-input" placeholder="Location" value="{{ current_user.location }}">
+                    <button type="submit" class="save-button" id="saveLocation" disabled>Save</button>
+                </form>
+            </div>
+
+            <!-- Confirmation message -->
+            <div id="profileUpdateMessage" class="flash-message" style="display: none;"></div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>&copy; Industrial Safety Inspections and Aaron Gomm. UI designed by Aaron Gomm.</p>
+        <p>
+            <a href="#" onclick="openModal('disclaimerModal')">Disclaimer</a> |
+            <a href="#" onclick="openModal('contactModal')">Contact</a>
+        </p>
+    </footer>
+
+    <!-- Disclaimer Modal -->
+    <div id="disclaimerModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('disclaimerModal')">&times;</span>
+            <h2>Disclaimer</h2>
             <p>
-                <a href="#" onclick="openModal('disclaimerModal')">Disclaimer</a> |
-                <a href="#" onclick="openModal('contactModal')">Contact</a>
+                This UI was designed by Aaron Gomm at Industrial Safety Inspections (ISI). While the design is credited to Aaron Gomm, all scripts and functionality were developed during company hours and are owned by ISI. Any inquiries for updates or modifications after Aaron's departure can be directed to ISI.
             </p>
-        </footer>
-
-        <!-- Disclaimer Modal -->
-        <div id="disclaimerModal" class="modal">
-            <div class="modal-content">
-                <span class="close" onclick="closeModal('disclaimerModal')">&times;</span>
-                <h2>Disclaimer</h2>
-                <p>
-                    This UI designed by Aaron Gomm at Industrial Safety Inspections (ISI). While the design is credited to Aaron Gomm, all scripts and functionality were developed during 
-                    company hours and are owned by ISI. Any inquiries for updates or modifications after Aaron's departure can be directed to ISI.
-                </p>
-            </div>
         </div>
+    </div>
 
-        <!-- Contact Modal -->
-        <div id="contactModal" class="modal">
-            <div class="modal-content">
-                <span class="close" onclick="closeModal('contactModal')">&times;</span>
-                <h2>Contact</h2>
-                <p>
-                    If you need further updates, modifications or additions to the UI or Scripts after my departure, please feel free to reach out via 
-                    <a href="https://www.linkedin.com/in/aaron-gomm-b8880868/" target="_blank">LinkedIn</a>
-                </p>
-            </div>
+    <!-- Contact Modal -->
+    <div id="contactModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('contactModal')">&times;</span>
+            <h2>Contact</h2>
+            <p>
+                If you need further updates, modifications, or additions to the UI or scripts after my departure, please feel free to reach out via
+                <a href="https://www.linkedin.com/in/aaron-gomm-b8880868/" target="_blank">LinkedIn</a>.
+            </p>
         </div>
-        <script src="static/js/scripts.js"></script>
-    </body>
+    </div>
+
+    <!-- Include JavaScript Files -->
+    <script src="{{ url_for('static', filename='js/scripts.js') }}"></script>
+</body>
 </html>

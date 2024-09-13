@@ -10,8 +10,8 @@ body {
 .flash-message {
     position: fixed;
     top: 60px; /* Position just below the navbar */
-    left: 0;
-    right: 0;
+    left: 50%;
+    transform: translateX(-50%);
     padding: 15px;
     text-align: center;
     color: white;
@@ -21,6 +21,7 @@ body {
     justify-content: space-between;
     align-items: center;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 0; /* Square edges */
 }
 
 /* Flash message types */
@@ -354,10 +355,15 @@ body {
     align-items: center;
 }
 
+/* System Contacts and System Users Modals */
+.system-modal {
+    z-index: 1000; /* Ensure it is above most content but below confirmation modals */
+}
+
 /* Modal Content Styling */
 .modal-content {
     background-color: #ffffff; /* Clean white background */
-    padding: 30px; /* More padding for a spacious look */
+    padding: 30px;
     width: 40%; /* Slightly narrower for a sleek appearance */
     max-height: 75vh; /* Restrict max height for better fit */
     overflow-y: auto; /* Allow scrolling if content overflows */
@@ -366,115 +372,116 @@ body {
     border: 1px solid #ddd; /* Light border for definition */
     text-align: center; /* Center text for a clean layout */
     transition: all 0.3s ease; /* Smooth transition for better UX */
+    border-radius: 8px; /* Rounded corners */
+    animation: fadeIn 0.3s ease-in-out; /* Animation for a smoother appearance */
 }
 
-
-/* Modal Heading */
-.modal-content h2 {
-    margin-top: 0;
-    font-size: 22px; /* Larger font for emphasis */
-    color: #333; /* Darker color for better readability */
-}
-
-/* Paragraph Styling */
-.modal-content p {
-    font-size: 16px;
-    line-height: 1.6; /* Increased line height for better readability */
-    color: #555; /* Softer text color */
-    margin-bottom: 20px; /* Space below paragraphs */
-}
-
-.modal-content a {
-    color: #0F70B7; /* Blue for links to match theme */
-    text-decoration: none;
-    font-weight: bold; /* Bold to highlight links */
-    transition: color 0.3s ease;
-}
-
-.modal-content a:hover {
-    color: #0D5A94; /* Darker blue on hover */
+/* Fade-in Animation */
+@keyframes fadeIn {
+    from {opacity: 0;}
+    to {opacity: 1;}
 }
 
 /* Profile Item Styling */
 .profile-item {
-    display: flex;
-    align-items: center;
-    gap: 0; /* Remove gap between input and button */
-    margin-bottom: 15px;
-    position: relative;
-    width: 100%; /* Ensure the entire width is utilized */
+    display: flex; /* Align items horizontally */
+    align-items: center; /* Center items vertically */
+    margin-bottom: 15px; /* Space below each profile item */
+    width: 100%; /* Use the full width of the parent container */
 }
 
-
-.profile-item[title]::after {
-    content: attr(title);
-    position: absolute;
-    top: -25px;
-    left: 0;
-    font-size: 12px;
-    color: #666;
-    display: none; /* Hidden by default, visible on hover */
-}
-
-.profile-item:hover::after {
-    display: block;
-}
-
-/* Profile Input Styling (Search Box) */
+/* Profile Input Styling */
 .profile-input {
-    padding: 10px;
+    flex: 1; /* Make the input field take the available space */
+    padding: 12px; /* Increased padding for consistent height with button */
     font-size: 16px;
     border: 1px solid #ddd;
     border-radius: 0; /* Square edges */
-    width: 100%;
-    box-sizing: border-box;
-    margin-bottom: 15px; /* Space below the search input */
+    margin-right: -1px; /* Prevents gap between input and button */
+    box-sizing: border-box; /* Include padding and border in element’s width */
+    width: 49%;
 }
 
-.profile-input:focus {
-    outline: none;
-    border-color: #0F70B7;
-}
-
-/* Dropdown Styling to Match Inputs */
-.profile-input select {
-    appearance: none; /* Remove default arrow for consistency */
-    background-color: white;
-    padding: 10px;
-    border: 1px solid #ddd;
-    font-size: 16px;
-    border-radius: 0; /* Square edges */
-    box-sizing: border-box;
+.profile-form {
     width: 100%;
-    cursor: pointer;
 }
 
 /* Save Button Styling */
 .save-button {
-    width: auto; /* Auto width to fit with input */
-    padding: 10px;
+    padding: 12.5px; /* Match the input field height */
     font-size: 16px;
-    background-color: #ddd;
+    background-color: #ddd; /* Inactive color */
     color: white;
     border: none;
-    cursor: not-allowed;
+    cursor: not-allowed; /* Show not-allowed cursor when inactive */
     border-radius: 0; /* Square edges */
+    flex-shrink: 0; /* Prevent the button from shrinking */
+    width: 49%; /* Fixed width for the save button */
     transition: background-color 0.3s ease;
-    margin-left: -1px; /* Negative margin to remove any gap */
-    flex-shrink: 0; /* Prevent button from shrinking */
-    margin-top: -15px; /* Bring button up slightly */
+    margin-left: -3px;
 }
 
 .save-button.active {
-    background-color: #0F70B7; /* Blue when active */
-    cursor: pointer;
+    background-color: #0F70B7; /* Active color */
+    cursor: pointer; /* Pointer cursor when active */
 }
 
 .save-button:disabled {
-    background-color: #ddd; /* Grey when disabled */
+    background-color: #ddd; /* Grey color when disabled */
     cursor: not-allowed;
 }
 
+/* Flash message styling within modal */
+#profileUpdateMessage {
+    margin: 10px 0;
+    padding: 15px;
+    border-radius: 0; /* Remove rounded corners */
+    color: white;
+    text-align: center;
+}
+
+#profileUpdateMessage.success {
+    background-color: #28a745; /* Green for success */
+}
+
+#profileUpdateMessage.error {
+    background-color: #e74c3c; /* Red for error */
+}
+
+/* Close Button Styling */
+.close {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 24px;
+    cursor: pointer;
+    color: #555; /* Subtle, neutral color */
+    background: none; /* Remove background */
+    border: none; /* Remove border */
+    transition: color 0.3s ease;
+}
+
+.close:hover {
+    color: #333; /* Slightly darker on hover */
+}
+
+/* Modal Button Styling */
+.modal-button {
+    width: 100%;
+    padding: 15px;
+    font-size: 16px;
+    background-color: #0F70B7;
+    color: white;
+    border: none;
+    margin-top: 20px;
+    cursor: pointer;
+    border-radius: 0; /* Square edges */
+    transition: background-color 0.3s ease;
+}
+
+.modal-button:hover {
+    background-color: #0D5A94;
+}
 
 /* Form Styling */
 .modal-form {
@@ -712,7 +719,6 @@ body {
     padding: 10px 15px;
     cursor: pointer;
     border-radius: 0; /* Square edges */
-     /* Flex allows button to expand to fit */
 }
 
 .previous-button {
@@ -730,6 +736,10 @@ body {
 }
 
 /* Delete Confirmation Button Styling */
+.delete-confirm-modal {
+    z-index: 1100; /* Set higher than other modals */
+}
+
 .delete-challenge {
     display: flex;
     gap: 10px;
@@ -774,11 +784,25 @@ body {
     width: 100%;
 }
 
+/* Settings Modal */
+.settings-modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6); /* Darker background for more emphasis */
+    justify-content: center;
+    align-items: center;
+}
 
 /* Settings Modal Button Styling */
 .settings-modal {
     height: 25%;
 }
+
 .settings-modal-button {
     flex: 1;
     height: 150px;
@@ -855,4 +879,17 @@ body {
 
 .modal-button:hover {
     background-color: #0D5A94;
+}
+
+/* Checkbox and label styling for consistent layout */
+.profile-item input[type="checkbox"] {
+    width: auto; /* Keep default size */
+    margin-right: 10px; /* Space between checkbox and label */
+}
+
+.profile-item label {
+    flex: 1;
+    text-align: left;
+    font-size: 16px;
+    margin-left: 10px; /* Aligns with the checkbox */
 }

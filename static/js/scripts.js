@@ -1,80 +1,71 @@
-// Dummy data for contacts (current contact as dummy data)
-const contactData = Array.from({ length: 15 }, (_, index) => ({
-    id: index + 1,
-    firstName: `Contact${index + 1}`,
-    lastName: `Last${index + 1}`,
-    email: `contact${index + 1}@example.com`,
-    contactNumber: `+12345678${index + 1}`,
-}));
+// =====================
+// Data Initialization
+// =====================
 
+// Arrays for user and contact data (Replace with actual data from the backend)
+const userData = []; // Will be populated with user data from the backend
+const contactData = []; // Will be populated with contact data from the backend
+
+// Pagination variables
+let currentPageUser = 1;
+const rowsPerPageUser = 10;
 let currentPageContact = 1;
 const rowsPerPageContact = 5;
 
-// Function to render the contact table with pagination
-function renderContactTable(data, page = 1) {
-    const tableBody = document.getElementById('contactsTableBody');
-    const pageNumberElement = document.getElementById('contactPageNumber');
-    tableBody.innerHTML = ''; // Clear existing rows
-    const start = (page - 1) * rowsPerPageContact;
-    const end = start + rowsPerPageContact;
-    const paginatedData = data.slice(start, end);
+// =====================
+// Modal Management Functions
+// =====================
 
-    paginatedData.forEach(contact => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${contact.firstName}</td>
-            <td>${contact.lastName}</td>
-            <td>${contact.email}</td>
-            <td>${contact.contactNumber}</td>
-            <td>
-                <button class="delete-button" onclick="showDeleteConfirm(${contact.id}, 'contact')">Delete</button>
-            </td>
-        `;
-        tableBody.appendChild(row);
+/**
+ * Open a modal dialog by ID.
+ * @param {string} modalId - The ID of the modal to open.
+ */
+function openModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.style.display = 'flex';
+    } else {
+        console.error(`Modal with ID ${modalId} not found.`);
+    }
+}
+
+/**
+ * Close a modal dialog by ID.
+ * @param {string} modalId - The ID of the modal to close.
+ */
+function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.style.display = 'none';
+    } else {
+        console.error(`Modal with ID ${modalId} not found.`);
+    }
+}
+
+// Close modal when clicking outside of it
+window.addEventListener('click', function(event) {
+    const modals = document.querySelectorAll('.modal');
+    modals.forEach(modal => {
+        if (event.target === modal) {
+            modal.style.display = 'none';
+        }
     });
-
-    pageNumberElement.textContent = page;
-}
-
-// Function to change pages for contacts
-function changePage(direction, type = 'contact') {
-    const totalPages = Math.ceil(contactData.length / rowsPerPageContact);
-    currentPageContact += direction;
-    currentPageContact = Math.max(1, Math.min(totalPages, currentPageContact)); // Keep within bounds
-    renderContactTable(contactData, currentPageContact);
-}
-
-// Function to filter contact table rows based on search input
-document.getElementById('contactSearchInput').addEventListener('input', function() {
-    const searchTerm = this.value.toLowerCase();
-    const filteredData = contactData.filter(contact =>
-        Object.values(contact).some(value => value.toString().toLowerCase().includes(searchTerm))
-    );
-    renderContactTable(filteredData, 1);
-    currentPageContact = 1; // Reset to first page on search
 });
 
-// Initial render for contacts
-renderContactTable(contactData, currentPageContact);
+// =====================
+// User Table Functions
+// =====================
 
-// Dummy data for testing pagination and search (current user as dummy data)
-const userData = Array.from({ length: 15 }, (_, index) => ({
-    id: index + 1,
-    firstName: `User${index + 1}`,
-    lastName: `Last${index + 1}`,
-    email: `user${index + 1}@example.com`,
-    department: 'IT',
-    location: 'Head Office',
-    accessLevel: index % 2 === 0 ? 'Admin' : 'User',
-}));
-
-let currentPageUser = 1;
-const rowsPerPageUser = 5;
-
-// Function to render the user table with pagination
 function renderUserTable(data, page = 1) {
     const tableBody = document.getElementById('usersTableBody');
     const pageNumberElement = document.getElementById('userPageNumber');
+
+    // Check if elements exist
+    if (!tableBody || !pageNumberElement) {
+        console.error('User table elements not found');
+        return;
+    }
+
     tableBody.innerHTML = ''; // Clear existing rows
     const start = (page - 1) * rowsPerPageUser;
     const end = start + rowsPerPageUser;
@@ -83,12 +74,12 @@ function renderUserTable(data, page = 1) {
     paginatedData.forEach(user => {
         const row = document.createElement('tr');
         row.innerHTML = `
-            <td>${user.firstName}</td>
-            <td>${user.lastName}</td>
+            <td>${user.first_name}</td>
+            <td>${user.last_name}</td>
             <td>${user.email}</td>
             <td>${user.department}</td>
             <td>${user.location}</td>
-            <td>${user.accessLevel}</td>
+            <td>${user.access_level}</td>
             <td>
                 <button class="delete-button" onclick="showDeleteConfirm(${user.id}, 'user')">Delete</button>
             </td>
@@ -99,48 +90,178 @@ function renderUserTable(data, page = 1) {
     pageNumberElement.textContent = page;
 }
 
-// Function to change pages
-function changePage(direction, type = 'user') {
-    const totalPages = Math.ceil(userData.length / rowsPerPageUser);
-    currentPageUser += direction;
-    currentPageUser = Math.max(1, Math.min(totalPages, currentPageUser)); // Keep within bounds
-    renderUserTable(userData, currentPageUser);
+function loadUserData(page = 1) {
+    fetch(`/api/users?page=${page}&per_page=${rowsPerPageUser}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.users) {
+                renderUserTable(data.users, data.current_page);
+                // Manage pagination button states
+                const prevButton = document.querySelector('.previous-button.user');
+                const nextButton = document.querySelector('.next-button.user');
+                if (prevButton) prevButton.disabled = data.current_page === 1;
+                if (nextButton) nextButton.disabled = data.current_page === data.pages;
+                currentPageUser = data.current_page;
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching user data:', error);
+            flashMessage('An error occurred while fetching user data.', 'error');
+        });
 }
 
-// Function to filter table rows based on search input
+// =====================
+// Contact Table Functions
+// =====================
+
+function renderContactTable(data, page = 1) {
+    const tableBody = document.getElementById('contactsTableBody');
+    const pageNumberElement = document.getElementById('contactPageNumber');
+
+    // Check if elements exist
+    if (!tableBody || !pageNumberElement) {
+        console.error('Contact table elements not found');
+        return;
+    }
+
+    tableBody.innerHTML = ''; // Clear existing rows
+    const start = (page - 1) * rowsPerPageContact;
+    const end = start + rowsPerPageContact;
+    const paginatedData = data.slice(start, end);
+
+    paginatedData.forEach(contact => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${contact.first_name}</td>
+            <td>${contact.last_name}</td>
+            <td>${contact.email}</td>
+            <td>${contact.contact_number}</td>
+            <td>
+                <button class="delete-button" onclick="showDeleteConfirm(${contact.id}, 'contact')">Delete</button>
+            </td>
+        `;
+        tableBody.appendChild(row);
+    });
+
+    pageNumberElement.textContent = page;
+}
+
+function loadContactData(page = 1) {
+    fetch(`/api/contacts?page=${page}&per_page=${rowsPerPageContact}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.contacts) {
+                renderContactTable(data.contacts, data.current_page);
+                // Manage pagination button states
+                const prevButton = document.querySelector('.previous-button.contact');
+                const nextButton = document.querySelector('.next-button.contact');
+                if (prevButton) prevButton.disabled = data.current_page === 1;
+                if (nextButton) nextButton.disabled = data.current_page === data.pages;
+                currentPageContact = data.current_page;
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching contact data:', error);
+            flashMessage('An error occurred while fetching contact data.', 'error');
+        });
+}
+
+// =====================
+// Flash Message Function
+// =====================
+
+/**
+ * Show a flash message on the screen.
+ * @param {string} message - The message to display.
+ * @param {string} category - The type of the message ('success' or 'error').
+ */
+function flashMessage(message, category) {
+    const flashContainer = document.createElement('div');
+    flashContainer.className = `flash-message ${category}`;
+    flashContainer.textContent = message;
+
+    const existingFlash = document.querySelector('.flash-message');
+    if (existingFlash) {
+        existingFlash.remove();
+    }
+
+    document.body.appendChild(flashContainer);
+
+    setTimeout(() => {
+        flashContainer.style.display = 'none';
+    }, 3000);
+}
+
+// =====================
+// Pagination Functions
+// =====================
+
+/**
+ * Change the current page for user or contact tables.
+ * @param {number} direction - Direction to change the page (-1 for previous, 1 for next).
+ * @param {string} type - Type of data ('user' or 'contact').
+ */
+function changePage(direction, type = 'user') {
+    if (type === 'user') {
+        const newPage = currentPageUser + direction;
+        if (newPage >= 1) {
+            loadUserData(newPage);
+        }
+    } else if (type === 'contact') {
+        const newPage = currentPageContact + direction;
+        if (newPage >= 1) {
+            loadContactData(newPage);
+        }
+    }
+}
+
+// =====================
+// Search Functions
+// =====================
+
+/**
+ * Filter user table rows based on search input.
+ */
 document.getElementById('userSearchInput').addEventListener('input', function() {
     const searchTerm = this.value.toLowerCase();
-    const filteredData = userData.filter(user =>
-        Object.values(user).some(value => value.toString().toLowerCase().includes(searchTerm))
-    );
-    renderUserTable(filteredData, 1);
-    currentPageUser = 1; // Reset to first page on search
+    fetch(`/api/users?search=${searchTerm}&page=1&per_page=${rowsPerPageUser}`)
+        .then(response => response.json())
+        .then(data => {
+            renderUserTable(data.users, 1);
+            currentPageUser = 1; // Reset to first page on search
+        })
+        .catch(error => {
+            console.error('Error fetching user data:', error);
+            flashMessage('An error occurred while fetching user data.', 'error');
+        });
 });
 
-// Initial render
-renderUserTable(userData, currentPageUser);
+/**
+ * Filter contact table rows based on search input.
+ */
+document.getElementById('contactSearchInput').addEventListener('input', function() {
+    const searchTerm = this.value.toLowerCase();
+    fetch(`/api/contacts?search=${searchTerm}&page=1&per_page=${rowsPerPageContact}`)
+        .then(response => response.json())
+        .then(data => {
+            renderContactTable(data.contacts, 1);
+            currentPageContact = 1; // Reset to first page on search
+        })
+        .catch(error => {
+            console.error('Error fetching contact data:', error);
+            flashMessage('An error occurred while fetching contact data.', 'error');
+        });
+});
 
-// Function to open a modal
-function openModal(modalId) {
-    const modal = document.getElementById(modalId);
-    if (modal) {
-        modal.style.display = 'flex';
-    } else {
-        console.error(`Modal with ID ${modalId} not found.`);
-    }
-}
+// =====================
+// Profile Save Buttons
+// =====================
 
-// Function to close a modal
-function closeModal(modalId) {
-    const modal = document.getElementById(modalId);
-    if (modal) {
-        modal.style.display = 'none';
-    } else {
-        console.error(`Modal with ID ${modalId} not found.`);
-    }
-}
-
-// Enable Save Button When Input Changes
+/**
+ * Enable Save Button When Input Changes
+ * @param {string} inputId - The ID of the input field.
+ * @param {string} buttonId - The ID of the save button.
+ */
 function enableSaveButton(inputId, buttonId) {
     const input = document.getElementById(inputId);
     const button = document.getElementById(buttonId);
@@ -156,7 +277,9 @@ function enableSaveButton(inputId, buttonId) {
     });
 }
 
-// Initialize Save Button Logic
+/**
+ * Initialize Save Button Logic for Profile Fields
+ */
 function initializeProfileSaveButtons() {
     enableSaveButton('firstNameInput', 'saveFirstName');
     enableSaveButton('lastNameInput', 'saveLastName');
@@ -165,38 +288,115 @@ function initializeProfileSaveButtons() {
     enableSaveButton('locationInput', 'saveLocation');
 }
 
-// Call the initialization function when the DOM is fully loaded
-document.addEventListener('DOMContentLoaded', function() {
-    initializeProfileSaveButtons();
-});
+/**
+ * Update Profile Item
+ * @param {Event} event - The click event on the save button.
+ * @param {string} inputId - The ID of the input field.
+ * @param {string} buttonId - The ID of the save button.
+ */
+function updateProfileItem(event, inputId, buttonId) {
+    event.preventDefault(); // Prevent the default button action
 
-// Show Delete Confirmation Modal
-let reportToDelete = null;
-let reportType = null;
+    const input = document.getElementById(inputId);
+    const button = document.getElementById(buttonId);
+    const updateMessage = document.getElementById('profileUpdateMessage');
 
-function showDeleteConfirm(reportId, type) {
-    reportToDelete = reportId;
-    reportType = type;
+    // AJAX request to update the field on the server
+    fetch('/update_profile', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: new URLSearchParams({
+            field: inputId.replace('Input', ''),
+            value: input.value
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            input.defaultValue = input.value;
+            button.disabled = true;
+            button.classList.remove('active');
+            showProfileUpdateMessage(data.message, 'success');
+        } else {
+            showProfileUpdateMessage(data.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error updating profile:', error);
+        showProfileUpdateMessage('An error occurred. Please try again.', 'error');
+    });
+}
+
+/**
+ * Show Flash Message Within the Modal
+ * @param {string} message - The message to display.
+ * @param {string} type - The type of the message ('success' or 'error').
+ */
+function showProfileUpdateMessage(message, type) {
+    const messageContainer = document.getElementById('profileUpdateMessage');
+    messageContainer.textContent = message;
+    messageContainer.className = ''; // Reset classes
+    messageContainer.classList.add('flash-message', type);
+    messageContainer.style.display = 'block';
+
+    // Hide the message after 3 seconds
+    setTimeout(() => {
+        messageContainer.style.display = 'none';
+    }, 3000);
+}
+
+// =====================
+// Delete Confirmation Logic
+// =====================
+
+let itemToDelete = null;
+let itemType = null;
+
+/**
+ * Show the delete confirmation modal.
+ * @param {number} itemId - The ID of the item to delete.
+ * @param {string} type - The type of item ('user', 'contact', etc.).
+ */
+function showDeleteConfirm(itemId, type) {
+    itemToDelete = itemId;
+    itemType = type;
     document.getElementById('deleteInput').value = '';
     document.getElementById('confirmDeleteButton').disabled = true;
     openModal('deleteConfirmModal');
 }
 
-// Confirm Delete Action
+/**
+ * Confirm the deletion action.
+ */
 function confirmDelete() {
-    if (reportToDelete !== null && reportType !== null) {
-        const tableBody = document.getElementById(`${reportType}ReportsTableBody`);
-        const row = tableBody.querySelector(`tr[data-id="${reportToDelete}"]`);
-        if (row) {
-            tableBody.removeChild(row);
-        }
+    if (itemToDelete !== null && itemType !== null) {
+        fetch(`/api/${itemType}/${itemToDelete}`, { method: 'DELETE' })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    flashMessage('Item deleted successfully.', 'success');
+                    setTimeout(() => {
+                        location.reload(); // Reload the page to refresh data
+                    }, 500); // Slight delay to show the flash message before reload
+                } else {
+                    flashMessage('Failed to delete item.', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error deleting item:', error);
+                flashMessage('An error occurred. Please try again.', 'error');
+            });
         closeModal('deleteConfirmModal');
-        reportToDelete = null;
-        reportType = null;
+        itemToDelete = null;
+        itemType = null;
     }
 }
 
-// Enable the delete button when the correct text is entered
+/**
+ * Enable the delete button when the correct text is entered.
+ */
 document.getElementById('deleteInput').addEventListener('input', function() {
     const deleteButton = document.getElementById('confirmDeleteButton');
     if (this.value === 'Delete') {
@@ -208,59 +408,275 @@ document.getElementById('deleteInput').addEventListener('input', function() {
     }
 });
 
-// Handle the delete confirmation button click
+// Event listener for confirm delete button
 document.getElementById('confirmDeleteButton').addEventListener('click', confirmDelete);
 
-// File Upload Button Script
-document.querySelectorAll('.upload-button').forEach(button => {
-    button.addEventListener('click', function() {
-        const fileCountElement = this.nextElementSibling;
-        fileCountElement.textContent = '2 files selected'; // Mock file count
-    });
-});
+// =====================
+// Flash Message Dismissal
+// =====================
 
-// Dismiss Flash Message
+/**
+ * Dismiss flash messages.
+ */
 function dismissFlashMessage() {
     document.querySelectorAll('.flash-message').forEach(msg => {
         msg.style.display = 'none';
     });
 }
 
-// Dropdown menu toggle
+// =====================
+// User Menu Dropdown
+// =====================
+
+/**
+ * Toggle the user dropdown menu.
+ */
 document.querySelector('.user-button').addEventListener('click', function() {
     document.querySelector('.dropdown-menu').classList.toggle('show');
 });
 
-// Show Delete Confirmation Modal for Users
-let userToDelete = null;
-function showDeleteConfirm(userId, type) {
-    userToDelete = userId;
-    document.getElementById('deleteInputUser').value = '';
-    document.getElementById('confirmDeleteButtonUser').disabled = true;
-    openModal('deleteConfirmModalUser');
-}
-
-// Confirm Delete Action for Users
-function confirmDeleteUser() {
-    if (userToDelete !== null) {
-        console.log(`User with ID ${userToDelete} deleted.`); // Implement actual deletion logic here
-        // Remove the user from the table or update the backend accordingly
-        closeModal('deleteConfirmModalUser');
-        userToDelete = null;
-    }
-}
-
-// Enable the delete button when the correct text is entered for user deletion
-document.getElementById('deleteInputUser').addEventListener('input', function() {
-    const deleteButton = document.getElementById('confirmDeleteButtonUser');
-    if (this.value === 'Delete') {
-        deleteButton.disabled = false;
-        deleteButton.classList.add('active');
-    } else {
-        deleteButton.disabled = true;
-        deleteButton.classList.remove('active');
+// Close the dropdown if clicked outside
+window.addEventListener('click', function(event) {
+    if (!event.target.matches('.user-button')) {
+        const dropdowns = document.querySelectorAll('.dropdown-menu');
+        dropdowns.forEach(dd => {
+            if (dd.classList.contains('show')) {
+                dd.classList.remove('show');
+            }
+        });
     }
 });
 
-// Handle the delete confirmation button click for users
-document.getElementById('confirmDeleteButtonUser').addEventListener('click', confirmDeleteUser);
+// =====================
+// File Upload Handling
+// =====================
+
+/**
+ * Update file count display when files are selected.
+ */
+document.querySelectorAll('.file-input').forEach(input => {
+    input.addEventListener('change', function() {
+        const fileCountElement = this.nextElementSibling;
+        const count = this.files.length;
+        fileCountElement.textContent = `${count} file${count !== 1 ? 's' : ''} selected`;
+    });
+});
+
+// =====================
+// Email Settings Save Buttons
+// =====================
+
+/**
+ * Enable Save Button for Email Settings When Input Changes
+ * @param {string} inputId - The ID of the email setting input field.
+ * @param {string} buttonId - The ID of the save button.
+ */
+function enableEmailSaveButton(inputId, buttonId) {
+    const input = document.getElementById(inputId);
+    const button = document.getElementById(buttonId);
+
+    input.addEventListener('input', function() {
+        if (input.value.trim() !== input.defaultValue.trim()) {
+            button.disabled = false;
+            button.classList.add('active');
+        } else {
+            button.disabled = true;
+            button.classList.remove('active');
+        }
+    });
+}
+
+/**
+ * Initialize Save Button Logic for Email Settings Fields
+ */
+function initializeEmailSaveButtons() {
+    enableEmailSaveButton('mail_server', 'saveMailServer');
+    enableEmailSaveButton('mail_port', 'saveMailPort');
+    enableEmailSaveButton('email_username', 'saveEmailUsername');
+    enableEmailSaveButton('email_password', 'saveEmailPassword');
+    enableEmailSaveButton('use_tls', 'saveUseTls');
+    enableEmailSaveButton('use_ssl', 'saveUseSsl');
+    enableEmailSaveButton('default_sender_name', 'saveDefaultSenderName');
+    enableEmailSaveButton('default_sender_email', 'saveDefaultSenderEmail');
+}
+
+/**
+ * Update Email Setting Item
+ * @param {Event} event - The click event on the save button.
+ * @param {string} inputId - The ID of the email setting input field.
+ * @param {string} buttonId - The ID of the save button.
+ */
+function updateEmailSetting(event, inputId, buttonId) {
+    event.preventDefault(); // Prevent the default button action
+
+    const input = document.getElementById(inputId);
+    const button = document.getElementById(buttonId);
+    const updateMessage = document.getElementById('emailUpdateMessage');
+
+    // AJAX request to update the email setting on the server
+    fetch('/save_email_settings', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: new URLSearchParams({
+            field: inputId,
+            value: input.type === 'checkbox' ? input.checked : input.value
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            input.defaultValue = input.value;
+            button.disabled = true;
+            button.classList.remove('active');
+            showEmailUpdateMessage(data.message, 'success');
+        } else {
+            showEmailUpdateMessage(data.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error updating email setting:', error);
+        showEmailUpdateMessage('An error occurred. Please try again.', 'error');
+    });
+}
+
+/**
+ * Show Flash Message Within the Email Settings Modal
+ * @param {string} message - The message to display.
+ * @param {string} type - The type of the message ('success' or 'error').
+ */
+function showEmailUpdateMessage(message, type) {
+    const messageContainer = document.getElementById('emailUpdateMessage');
+    messageContainer.textContent = message;
+    messageContainer.className = ''; // Reset classes
+    messageContainer.classList.add('flash-message', type);
+    messageContainer.style.display = 'block';
+
+    // Hide the message after 3 seconds
+    setTimeout(() => {
+        messageContainer.style.display = 'none';
+    }, 3000);
+}
+
+// =====================
+// AJAX Email Settings Update Functions
+// =====================
+
+/**
+ * Enable Save Button When Input Changes for Email Settings
+ * @param {string} inputId - The ID of the input field.
+ * @param {string} buttonId - The ID of the save button.
+ */
+function enableEmailSaveButton(inputId, buttonId) {
+    const input = document.getElementById(inputId);
+    const button = document.getElementById(buttonId);
+
+    input.addEventListener('input', function() {
+        if (input.value.trim() !== input.defaultValue.trim()) {
+            button.disabled = false;
+            button.classList.add('active');
+        } else {
+            button.disabled = true;
+            button.classList.remove('active');
+        }
+    });
+
+    if (input.type === 'checkbox') {
+        input.addEventListener('change', function() {
+            button.disabled = false;
+            button.classList.add('active');
+        });
+    }
+}
+
+/**
+ * Update Email Settings Item
+ * @param {Event} event - The click event on the save button.
+ * @param {string} inputId - The ID of the input field.
+ * @param {string} buttonId - The ID of the save button.
+ */
+function updateEmailSettingsItem(event, inputId, buttonId) {
+    event.preventDefault(); // Prevent the default button action
+
+    const input = document.getElementById(inputId);
+    const button = document.getElementById(buttonId);
+
+    // AJAX request to update the field on the server
+    fetch('/update_email_settings', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: new URLSearchParams({
+            field: inputId,
+            value: input.type === 'checkbox' ? input.checked.toString() : input.value
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            input.defaultValue = input.value;
+            button.disabled = true;
+            button.classList.remove('active');
+            flashMessage(data.message, 'success');
+        } else {
+            flashMessage(data.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error updating email setting:', error);
+        flashMessage('An error occurred. Please try again.', 'error');
+    });
+}
+
+// Initialize Save Button Logic for Email Settings Fields
+function initializeEmailSaveButtons() {
+    enableEmailSaveButton('mail_server', 'saveMailServer');
+    enableEmailSaveButton('mail_port', 'saveMailPort');
+    enableEmailSaveButton('email_username', 'saveEmailUsername');
+    enableEmailSaveButton('email_password', 'saveEmailPassword');
+    enableEmailSaveButton('use_tls', 'saveUseTls');
+    enableEmailSaveButton('use_ssl', 'saveUseSsl');
+    enableEmailSaveButton('default_sender_name', 'saveDefaultSenderName');
+    enableEmailSaveButton('default_sender_email', 'saveDefaultSenderEmail');
+}
+
+// =====================
+// Initialization
+// =====================
+
+/**
+ * Initialize the application 
+ */
+function initializeApp() {
+    // Existing initialization logic...
+    
+    // Initialize profile save buttons
+    initializeProfileSaveButtons();
+
+    // Load user and contact data for tables
+    loadUserData(currentPageUser);
+    loadContactData(currentPageContact);
+
+    // Add event listeners for pagination buttons (if not already handled elsewhere)
+    document.querySelectorAll('.previous-button').forEach(button => {
+        button.addEventListener('click', () => changePage(-1, button.dataset.type));
+    });
+
+    document.querySelectorAll('.next-button').forEach(button => {
+        button.addEventListener('click', () => changePage(1, button.dataset.type));
+    });
+
+    // Initialize email settings save buttons
+    initializeEmailSaveButtons();
+
+    // Check for flash messages on load and handle any initial state setup
+    const existingFlashMessages = document.querySelectorAll('.flash-message');
+    if (existingFlashMessages) {
+        existingFlashMessages.forEach(msg => setTimeout(() => msg.style.display = 'none', 3000));
+    }
+}
+
+// Attach initializeApp function to DOMContentLoaded event
+document.addEventListener('DOMContentLoaded', initializeApp);

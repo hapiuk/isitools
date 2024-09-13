@@ -1,13 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <!-- Meta tags for character encoding and responsiveness -->
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login</title>
-    <link rel="stylesheet" href="static/css/login.css">
+    <!-- Link to the login-specific CSS stylesheet -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
 </head>
 <body class="login-body">
+    <!-- Flash messages block -->
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
             <div class="flash-container">
@@ -18,18 +21,24 @@
         {% endif %}
     {% endwith %}
 
+    <!-- Login form container -->
     <div class="login-container">
-        <img src="static/images/logos/Logo.png" alt="Logo" class="logo">
-        <form action="/login" method="POST" class="login-form">
-            <input type="text" name="username" placeholder="Username" class="input-box">
-            <input type="password" name="password" placeholder="Password" class="input-box">
+        <!-- Company logo -->
+        <img src="{{ url_for('static', filename='images/logos/Logo.png') }}" alt="Logo" class="logo">
+        <!-- Login form -->
+        <form action="{{ url_for('login') }}" method="POST" class="login-form">
+            <!-- Email input -->
+            <input type="email" name="email" placeholder="Email Address" class="input-box" required>
+            <!-- Password input -->
+            <input type="password" name="password" placeholder="Password" class="input-box" required>
+            <!-- Forgot username link -->
             <a href="/forgot-username" class="forgot-link">Forgot Username?</a>
+            <!-- Submit button -->
             <button type="submit" class="login-button">Login</button>
         </form>
-        <div class="debug-buttons">
-            <a href="{{ url_for('test_flash') }}" class="debug-button">Test Flash Message</a>
-            <a href="{{ url_for('test_error') }}" class="debug-button">Test Error Message</a>
-        </div>
     </div>
+
+    <!-- Include JavaScript Files if needed -->
+    <script src="{{ url_for('static', filename='js/scripts.js') }}"></script>
 </body>
 </html>
