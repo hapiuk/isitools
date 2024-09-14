@@ -8,13 +8,18 @@ This project is a web-based UI designed for Industrial Safety Inspections (ISI),
 
 ## Features
 
-- **User Management:** View, create, and delete system users with an intuitive interface. User details include First Name, Last Name, Email, Department, Location, and Access Level (Admin/User).
-- **Contact Management:** Manage system contacts with easy-to-use search and pagination features. Contacts include First Name, Last Name, Email, and Contact Number.
-- **Email Settings:** Configure mail server settings including Mail Server, Port, Username, Password, TLS/SSL options, Default Sender Name, and Email.
-- **Report Processing:** Process and view reports for PUWER, LOLER, and Custom Client Reports, with functionalities to upload files, process data, and view historic reports.
-- **System Settings:** Access system configurations through settings for users, contacts, and mail settings, all presented in a consistent modal format.
-- **Flash Messages:** Provides feedback and error handling through dismissible flash messages, styled to fit within the application theme.
-- **Responsive Design:** Consistent look and feel across devices, with a footer that remains fixed at the bottom of the viewport.
+- **User Management:** View, create, and delete system users with an intuitive interface. User details include First Name, Last Name, Email, Department, Location, and Access Level (Admin/User). The system uses a simple permissions model to ensure that only Admins can perform actions such as creating or deleting users.
+- **Contact Management:** Manage system contacts with easy-to-use search and pagination features. Contacts include First Name, Last Name, Email, and Contact Number. The permissions system prevents non-admin users from editing or deleting contacts, ensuring data integrity.
+- **Email Settings:** Configure mail server settings including Mail Server, Port, Username, Password, TLS/SSL options, Default Sender Name, and Email. Save functionality includes visual feedback on changes, with buttons activating only when there are modifications.
+- **Report Processing:** Process and view reports for PUWER, LOLER, and Custom Client Reports, with functionalities to upload files, process data, and view historic reports. Each report type has a dedicated modal for streamlined data handling.
+- **System Settings:** Access system configurations through settings for users, contacts, and mail settings, all presented in a consistent modal format. A dedicated button within the settings allows Admins to add new users directly from the UI.
+- **Flash Messages:** Provides feedback and error handling through dismissible flash messages, styled to fit within the application theme, enhancing the user interaction experience.
+- **Responsive Design:** Consistent look and feel across devices, with a footer that remains fixed at the bottom of the viewport, ensuring a seamless experience on both desktop and mobile devices.
+
+## Permissions System
+
+- **Admin Users:** Can view, create, edit, and delete users and contacts. Admins have full control over system settings and configuration.
+- **Non-Admin Users:** Can view system users and contacts but cannot create, edit, or delete entries. Attempting to perform restricted actions results in a flash message indicating lack of permission.
 
 ## Upcoming Features (Backend Development)
 
@@ -58,7 +63,7 @@ To set up the project locally:
 - Access the application via the local server (e.g., `http://127.0.0.1:5000/`).
 - Log in using the default admin credentials (or create a user through the admin interface).
 - Navigate through the dashboard to access different sections like user management, contacts, and system settings.
-- Use the modals to update configurations and manage data.
+- Use the modals to update configurations and manage data. Admin-specific features are clearly marked and accessible based on permissions.
 
 ## Contact
 
