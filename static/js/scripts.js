@@ -5,6 +5,7 @@
 // Arrays for user and contact data (Replace with actual data from the backend)
 const userData = []; // Will be populated with user data from the backend
 const contactData = []; // Will be populated with contact data from the backend
+const currentUserAccessLevel = "{{ current_user.access_level }}";
 
 // Pagination variables
 let currentPageUser = 1;
@@ -56,6 +57,7 @@ window.addEventListener('click', function(event) {
 // User Table Functions
 // =====================
 
+// Function to render the users table with data
 function renderUserTable(data, page = 1) {
     const tableBody = document.getElementById('usersTableBody');
     const pageNumberElement = document.getElementById('userPageNumber');
@@ -71,6 +73,7 @@ function renderUserTable(data, page = 1) {
     const end = start + rowsPerPageUser;
     const paginatedData = data.slice(start, end);
 
+    // Populate the table with user data
     paginatedData.forEach(user => {
         const row = document.createElement('tr');
         row.innerHTML = `
@@ -145,6 +148,39 @@ function renderContactTable(data, page = 1) {
 
     pageNumberElement.textContent = page;
 }
+
+// Confirm deletion or block based on access level
+function showDeleteConfirm(id, type) {
+    if (type === 'contact' && currentUserAccessLevel !== 'Admin') {
+        flashMessage('You do not have permission to perform this action.', 'error');
+        return;
+    }
+
+    // Proceed with deletion logic if the user has permission
+    // Add your delete logic here
+    // Example for deleting a contact
+    if (type === 'contact') {
+        fetch(`/api/contact/${id}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Contact deleted successfully.');
+                loadContactData(currentPageContact); // Reload the contact data after deletion
+            } else {
+                flashMessage(`Error: ${data.error}`, 'error');
+            }
+        })
+        .catch(error => {
+            flashMessage(`Request failed: ${error}`, 'error');
+        });
+    }
+}
+
 
 function loadContactData(page = 1) {
     fetch(`/api/contacts?page=${page}&per_page=${rowsPerPageContact}`)
@@ -647,6 +683,42 @@ function initializeApp() {
     if (existingFlashMessages) {
         existingFlashMessages.forEach(msg => setTimeout(() => msg.style.display = 'none', 3000));
     }
+}
+
+function openPasswordUpdateModal() {
+    document.getElementById('updatePasswordModal').style.display = 'flex';
+}
+
+function closeModal(modalId) {
+    document.getElementById(modalId).style.display = 'none';
+}
+
+function deleteUser(userId) {
+    if (currentUserAccessLevel !== 'Admin') {
+        alert("You do not have permission to perform this action.");
+        return;
+    }
+
+    // If admin, proceed with the deletion logic
+    fetch(`/api/user/${userId}`, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken  // Include CSRF token if applicable
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('User deleted successfully.');
+            // Update the table or reload data here
+        } else {
+            alert(`Error: ${data.error}`);
+        }
+    })
+    .catch(error => {
+        alert(`Request failed: ${error}`);
+    });
 }
 
 // Attach initializeApp function to DOMContentLoaded event

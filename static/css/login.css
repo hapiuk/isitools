@@ -1,3 +1,4 @@
+/* Base styles for the body and login container remain the same */
 body {
     margin: 0;
     padding: 0;
@@ -34,18 +35,26 @@ body {
     border: 1px solid #ddd;
     border-radius: 0; /* Remove rounded corners */
     font-size: 16px;
+    box-sizing: border-box;
 }
 
+/* Forgot Password link styling */
 .forgot-link {
     display: block;
     margin: 10px 0;
     font-size: 14px;
-    color: #0F70B7;
-    text-decoration: none;
+    color: #0F70B7; /* Consistent blue color */
+    text-decoration: none; /* Remove underline */
+    cursor: pointer;
 }
 
-.forgot-link:hover {
-    text-decoration: underline;
+.forgot-link:hover,
+.forgot-link:visited,
+.forgot-link:focus,
+.forgot-link:active {
+    color: #0F70B7; /* Ensure color remains blue */
+    text-decoration: none; /* Keep the underline removed */
+    outline: none; /* Remove focus outline */
 }
 
 .login-button {
@@ -65,27 +74,130 @@ body {
     background-color: #0D5A94;
 }
 
-/* Flash message styling */
-.flash-container {
+/* Modal and button/input styling to match "My Profile" */
+.modal {
+    display: none; /* Hidden by default */
+    position: fixed; /* Stay in place */
+    z-index: 1000; /* Sit on top */
+    left: 0;
+    top: 0;
+    width: 100%; /* Full width */
+    height: 100%; /* Full height */
+    background-color: rgba(0, 0, 0, 0.5); /* Black w/ opacity */
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-content {
+    background-color: #ffffff;
+    margin: auto; /* Centered */
+    padding: 20px;
+    border: 1px solid #ddd;
+    width: 80%; /* Width for responsiveness */
+    max-width: 400px; /* Maximum width of the modal */
+    position: absolute;
+    top: 50%; /* Position from the top */
+    left: 50%; /* Position from the left */
+    transform: translate(-50%, -50%); /* Center the modal */
+    border-radius: 0; /* Remove rounded corners */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.modal .close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.modal .close:hover,
+.modal .close:focus {
+    color: black;
+    text-decoration: none;
+}
+
+.profile-item {
+    display: flex; /* Align items horizontally */
+    align-items: center; /* Center items vertically */
+    margin-bottom: 15px; /* Space below each profile item */
+    width: 100%; /* Use the full width of the parent container */
+}
+
+.profile-input {
+    flex: 1; /* Make the input field take the available space */
+    padding: 12px; /* Increased padding for consistent height with button */
+    font-size: 16px;
+    border: 1px solid #ddd;
+    border-radius: 0; /* Square edges */
+    margin-right: -1px; /* Prevents gap between input and button */
+    box-sizing: border-box; /* Include padding and border in element’s width */
+}
+
+.save-button {
+    padding: 12.5px; /* Match the input field height */
+    font-size: 16px;
+    background-color: #ddd; /* Inactive color */
+    color: white;
+    border: none;
+    cursor: not-allowed; /* Show not-allowed cursor when inactive */
+    border-radius: 0; /* Square edges */
+    flex-shrink: 0; /* Prevent the button from shrinking */
+    transition: background-color 0.3s ease;
+    width: 120px; /* Set a fixed width for consistency */
+}
+
+.save-button.active {
+    background-color: #0F70B7; /* Active color */
+    cursor: pointer; /* Pointer cursor when active */
+}
+
+.save-button:disabled {
+    background-color: #ddd; /* Grey color when disabled */
+    cursor: not-allowed;
+}
+
+/* Flash Message Styling */
+.flash-message {
     position: fixed;
-    top: 20px;
+    top: 60px; /* Position just below the navbar */
     left: 50%;
     transform: translateX(-50%);
-    z-index: 1000;
-}
-
-.flash-message {
-    margin: 10px 0;
     padding: 15px;
-    border-radius: 0; /* Remove rounded corners */
-    color: white;
     text-align: center;
+    color: white;
+    font-weight: bold;
+    z-index: 1000;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 0; /* Square edges */
 }
 
+/* Flash message types */
 .flash-message.info {
-    background-color: #28a745;
+    background-color: #28a745; /* Green for info */
 }
 
 .flash-message.error {
-    background-color: #e74c3c;
+    background-color: #e74c3c; /* Red for error */
+}
+
+.flash-message.success {
+    background-color: #28a745; /* Green for success */
+}
+
+/* Dismiss button styling */
+.flash-message .dismiss-btn {
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+    margin-left: 10px;
+}
+
+.flash-message .dismiss-btn:hover {
+    color: #ddd;
 }

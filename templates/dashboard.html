@@ -260,7 +260,7 @@
 
             <!-- Search Input -->
             <input type="text" id="userSearchInput" class="profile-input" placeholder="Search users...">
-            
+
             <!-- User Table -->
             <div class="table-container">
                 <table class="users-table">
@@ -276,23 +276,24 @@
                         </tr>
                     </thead>
                     <tbody id="usersTableBody">
-                        <!-- User rows will be dynamically inserted here -->
+                        <!-- Rows populated by JavaScript -->
                     </tbody>
                 </table>
             </div>
 
             <!-- Pagination Controls -->
             <div class="pagination">
-                <button class="page-button previous-button" onclick="changePage(-1, 'user')">Previous</button>
+                <button class="page-button previous-button user" onclick="loadUserData(currentPageUser - 1)">Previous</button>
                 <span id="userPageNumber">1</span>
-                <button class="page-button next-button" onclick="changePage(1, 'user')">Next</button>
+                <button class="page-button next-button user" onclick="loadUserData(currentPageUser + 1)">Next</button>
             </div>
 
-            <!-- Create User Button -->
-            <button class="create-user-button" onclick="openModal('createUserModal')">Create User</button>
+            <!-- Create User Button - Visible only to Admins -->
+            {% if current_user.access_level == 'Admin' %}
+                <button class="create-user-button" onclick="openModal('createUserModal')">Create User</button>
+            {% endif %}
         </div>
     </div>
-
 
     <!-- Create User Modal -->
     <div id="createUserModal" class="modal">
@@ -511,8 +512,22 @@
                 </form>
             </div>
 
+            <button type="button" class="modal-button" onclick="openPasswordUpdateModal()">Update Password</button>
             <!-- Confirmation message -->
             <div id="profileUpdateMessage" class="flash-message" style="display: none;"></div>
+        </div>
+    </div>
+
+    <!-- Update Password Modal -->
+    <div id="updatePasswordModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('updatePasswordModal')">&times;</span>
+            <h2>Update Password</h2>
+            <form action="{{ url_for('reset_password', token=current_user.reset_token) }}" method="POST" class="profile-form">
+                <input type="password" name="new_password" placeholder="New Password" class="profile-input" required>
+                <input type="password" name="confirm_password" placeholder="Confirm Password" class="profile-input" required>
+                <button type="submit" class="modal-button">Update Password</button>
+            </form>
         </div>
     </div>
 

@@ -10,16 +10,20 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
 </head>
 <body class="login-body">
-    <!-- Flash messages block -->
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            <div class="flash-container">
+
+    <!-- Flash Messages Container -->
+    <div class="flash-container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
                 {% for category, message in messages %}
-                    <div class="flash-message {{ category }}">{{ message }}</div>
+                    <div class="flash-message {{ category }}">
+                        <span>{{ message }}</span>
+                        <button class="dismiss-btn" onclick="dismissFlashMessage(this)">×</button>
+                    </div>
                 {% endfor %}
-            </div>
-        {% endif %}
-    {% endwith %}
+            {% endif %}
+        {% endwith %}
+    </div>
 
     <!-- Login form container -->
     <div class="login-container">
@@ -31,14 +35,29 @@
             <input type="email" name="email" placeholder="Email Address" class="input-box" required>
             <!-- Password input -->
             <input type="password" name="password" placeholder="Password" class="input-box" required>
-            <!-- Forgot username link -->
-            <a href="/forgot-username" class="forgot-link">Forgot Username?</a>
+            <!-- Forgot password link -->
+            <a href="#" class="forgot-link" onclick="openForgotPasswordModal()">Forgot Password?</a>
             <!-- Submit button -->
             <button type="submit" class="login-button">Login</button>
         </form>
     </div>
 
+    <!-- Forgot Password Modal -->
+    <div id="forgotPasswordModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('forgotPasswordModal')">&times;</span>
+            <h2>Forgot Password</h2>
+            <form id="forgotPasswordForm" class="profile-form">
+                <div class="profile-item">
+                    <input type="email" id="forgotEmail" class="profile-input" placeholder="Enter your email" required>
+                    <button type="submit" id="sendLinkButton" class="save-button" disabled>Send Link</button>
+                </div>
+            </form>
+            <div id="forgotPasswordMessage" class="flash-message" style="display: none;"></div>
+        </div>
+    </div>
+
     <!-- Include JavaScript Files if needed -->
-    <script src="{{ url_for('static', filename='js/scripts.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/password_reset.js') }}"></script>
 </body>
 </html>
