@@ -136,7 +136,7 @@
         <div class="modal-content">
             <span class="close" onclick="closeModal('aecomModal')">&times;</span>
             <h2>Process AECOM Reports</h2>
-            <form class="modal-form" action="{{ url_for('process_aecom_reports') }}" method="POST" enctype="multipart/form-data">
+            <form class="modal-form" action="{{ url_for('upload_reports') }}" method="POST" enctype="multipart/form-data">
                 <input type="text" name="business_entity" placeholder="Business Entity" class="form-input" required>
                 <div class="file-upload">
                     <input type="file" name="report_files" multiple class="file-input" required>
@@ -144,11 +144,9 @@
                 </div>
                 <button type="submit" class="process-button">Process Reports</button>
             </form>
-            <button type="button" class="view-historic-button" onclick="openModal('historicReportsModal')">View Historic Reports</button>
         </div>
     </div>
 
-    <!-- Historic Reports Modals -->
     <!-- AECOM Historic Reports Modal -->
     <div id="historicReportsModal" class="modal">
         <div class="modal-content">
@@ -565,5 +563,6 @@
 
     <!-- Include JavaScript Files -->
     <script src="{{ url_for('static', filename='js/scripts.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/aecom.js') }}"></script>
 </body>
 </html>
