@@ -11,7 +11,139 @@ const currentUserAccessLevel = "{{ current_user.access_level }}";
 let currentPageUser = 1;
 const rowsPerPageUser = 10;
 let currentPageContact = 1;
-const rowsPerPageContact = 5;
+const rowsPerPageContact = 10;
+let currentPageAECOM = 1;
+const rowsPerPageAECOM = 10;
+
+// =====================
+// AECOM STUFF with Debugging
+// =====================
+
+function fetchHistoricReports(page = 1, perPage = rowsPerPageAECOM) {
+    fetch(`/api/aecom/historic-reports?page=${page}&per_page=${perPage}`)
+        .then(response => response.json())
+        .then(data => {
+            const tableBody = document.getElementById('aecomReportsTableBody');
+            tableBody.innerHTML = ''; // Clear any existing rows
+
+            if (data.reports && data.reports.length > 0) {
+                data.reports.forEach(report => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${report.site_name}</td>
+                        <td>${report.items_inspected}</td>
+                        <td>${new Date(report.visit_date).toLocaleDateString()}</td>
+                        <td>
+                            <button class="download-button" onclick="downloadReport('${report.link}')">Download</button>
+                            <button class="delete-button" onclick="confirmDelete('${report.id}')">Delete</button>
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+
+                // Update the pagination display
+                updateAECOMPagination(data.current_page, data.pages);
+                currentPageAECOM = data.current_page; // Update current page number
+            } else {
+                // Display a message if no reports are available
+                tableBody.innerHTML = '<tr><td colspan="4">No reports found.</td></tr>';
+            }
+        })
+        .catch(error => console.error('Error fetching reports:', error));
+}
+
+
+function updateAECOMPagination(currentPage, totalPages) {
+    console.log(`Updating pagination: currentPage=${currentPage}, totalPages=${totalPages}`); // Debug
+
+    // Use the existing pagination controls in your layout
+    const pageNumberElement = document.getElementById('aecomPageNumber');
+    const prevButton = document.querySelector('.previous-button.aecom');
+    const nextButton = document.querySelector('.next-button.aecom');
+
+    // Update page number display
+    if (pageNumberElement) {
+        pageNumberElement.textContent = currentPage;
+    }
+
+    // Enable or disable pagination buttons based on the current page
+    if (prevButton) {
+        prevButton.disabled = currentPage === 1;
+        prevButton.onclick = () => changePage(-1, 'aecom');
+    }
+    if (nextButton) {
+        nextButton.disabled = currentPage === totalPages;
+        nextButton.onclick = () => changePage(1, 'aecom');
+    }
+}
+
+// Update the changePage function to handle AECOM pagination with Debugging
+function changePage(direction, type) {
+    console.log(`Changing page: direction=${direction}, type=${type}`); // Debug
+
+    if (type === 'user') {
+        const newPage = currentPageUser + direction;
+        if (newPage >= 1) {
+            loadUserData(newPage);
+        }
+    } else if (type === 'contact') {
+        const newPage = currentPageContact + direction;
+        if (newPage >= 1) {
+            loadContactData(newPage);
+        }
+    } else if (type === 'aecom') {
+        const newPage = currentPageAECOM + direction;
+        if (newPage >= 1) {
+            fetchHistoricReports(newPage);
+        }
+    }
+}
+
+function downloadReport(visitLink) {
+    // Construct the direct URL to the file in the static directory
+    const url = visitLink.startsWith('/static') ? visitLink : `/static/processed/${visitLink}`;
+
+    // Create a temporary link element and trigger the download
+    const a = document.createElement('a');
+    a.style.display = 'none';
+    a.href = url;
+    a.download = url.split('/').pop();  // Use the filename from the URL for download
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+    // Optionally, flash a message to the user
+    alert('Download started');
+}
+
+function deleteReport(reportId) {
+    console.log(`Deleting AECOM report with ID: ${reportId}`); // Debug
+
+    fetch(`/api/aecom/historic-reports/${reportId}`, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        credentials: 'include', // Include cookies for session management
+    })
+    .then(response => {
+        console.log('Delete response:', response); // Debug
+        return response.json();
+    })
+    .then(data => {
+        console.log('Delete response data:', data); // Debug
+
+        if (data.success) {
+            closeModal('deleteConfirmModal');
+            fetchHistoricReports(); // Reload reports after deletion
+        } else {
+            alert('Failed to delete the report.');
+        }
+    })
+    .catch(error => {
+        console.error('Error deleting report:', error); // Debug
+    });
+}
 
 // =====================
 // Modal Management Functions

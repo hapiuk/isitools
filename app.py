@@ -1,6 +1,6 @@
-import os, smtplib, random, string, requests, base64, logging, secrets, re
+import os, smtplib, random, string, requests, base64, logging, secrets, re, csv, zipfile
 from datetime import date, datetime, timedelta, timezone
-from flask import Flask, render_template, redirect, url_for, request, flash, jsonify
+from flask import Flask, render_template, redirect, url_for, request, flash, jsonify, send_from_directory, send_file
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user, UserMixin
 from flask_migrate import Migrate
 from flask_mail import Mail, Message
@@ -311,17 +311,7 @@ def extract_text_from_pdf(pdf_path):
     text = ""
     for page in reader.pages:
         text += page.extract_text()
-    
-    # Print or log the extracted text for inspection
-    print(f"Extracted Text from {pdf_path}:\n{text}\n{'='*50}")
-    
     return text
-def construct_report_link(site_name, business_entity, visit_id):
-    # Construct the zip file name
-    zip_filename = f"{site_name}_{business_entity}_{visit_id}.zip"
-    # Construct the full link
-    report_link = f"http://isitools.local:5000/static/processed/{zip_filename}"
-    return report_link
 
 def process_date(date_value):
     # Converts a datetime object to a date object; if None, return as is
@@ -569,8 +559,6 @@ def process_uploaded_pdfs(business_entity):
     upload_folder = app.config['UPLOAD_FOLDER']
     processed_folder = app.config['PROCESSED_FOLDER']
 
-    # Remove the line that clears the processed folder
-
     visit_data = None
     inspections_data = []
     has_remedial_works = False  # Flag to track if high-priority defects exist
@@ -581,7 +569,6 @@ def process_uploaded_pdfs(business_entity):
         if filename.endswith(".pdf"):
             pdf_path = os.path.join(upload_folder, filename)
 
-            # Update the regex pattern to match 'Job_#####.pdf' or 'Job #####.pdf'
             if re.match(r'Job[_ ]\d+\.pdf', filename):
                 cover_pdf = pdf_path
                 print(f"Cover PDF identified: {filename}")
@@ -592,7 +579,6 @@ def process_uploaded_pdfs(business_entity):
             # Extract data from the PDF
             base_info, inspection_entries = extract_information_from_pdf(text, business_entity)
 
-            # Use the first PDF's base_info for the visit
             if not visit_data and base_info:
                 visit_data = base_info.copy()
 
@@ -601,7 +587,6 @@ def process_uploaded_pdfs(business_entity):
                 if entry['priority'] in ['Moderate', 'Substantial', 'Intolerable']:
                     has_remedial_works = True
 
-            # Add all inspection entries
             inspections_data.extend(inspection_entries)
 
             # Determine severity for sorting
@@ -609,16 +594,9 @@ def process_uploaded_pdfs(business_entity):
             pdf_files.append((pdf_path, highest_severity))
 
     if visit_data:
-        # Set the 'document' field to External Inspection Ref No + '.pdf'
         visit_data['document'] = visit_data['external_inspection_ref_no'] + '.pdf'
-
-        # Set 'remedial_works' to 'Yes' or 'No' as a string
         visit_data['remedial_works'] = 'Yes' if has_remedial_works else 'No'
-
-        # Set 'risk_rating' to an empty string
         visit_data['risk_rating'] = ''
-
-        # Set 'inspection_fully_completed' to True (since it's a Boolean)
         visit_data['inspection_fully_completed'] = True
 
         # Insert the visit entry and get the visit_id
@@ -634,16 +612,25 @@ def process_uploaded_pdfs(business_entity):
         # Merge PDFs
         merge_pdfs(upload_folder, processed_folder, pdf_files, visit_data['document'], cover_pdf)
 
+        # Generate the report package now that PDFs are merged and CSVs are generated
+        try:
+            # Fetch the visit from the database to include in the report package generation
+            visit = Visit.query.get(visit_id)
+            generate_report_package(visit, inspections_data)
+            print("Report package generated successfully.")
+        except Exception as e:
+            print(f"Error generating report package: {e}")
+            flash("Error generating the report package.", "error")
+
         # Clear the upload folder after processing
         clear_folder(upload_folder)
     else:
         flash("No visit data extracted.", "error")
 
-
 def insert_visit(extracted_data):
     try:
         # Construct the download link using the 'document' field
-        download_link = f"http://isitools.local:5000/static/processed/{extracted_data['document']}"
+        download_link = f"/static/processed/{extracted_data['document']}"
 
         visit = Visit(
             compliance_or_asset_ref_no=extracted_data['compliance_or_asset_ref_no'],
@@ -694,6 +681,92 @@ def insert_inspections(inspections_data):
         db.session.add(inspection)
     db.session.commit()
 
+def generate_csv_for_visit(visit):
+    try:
+        # Exclude 'id' column from the visit data
+        visit_data = {key: value for key, value in visit.__dict__.items() if key not in ['_sa_instance_state', 'id']}
+        
+        # Construct the filename based on the naming convention
+        filename = f"{visit.properties_business_entity}.{visit.id}-PWR-{visit.inspection_date.strftime('%d%m%Y')}-{visit.id}.csv"
+        filepath = os.path.join(app.config['PROCESSED_FOLDER'], filename)
+
+        # Create CSV for visit data
+        with open(filepath, 'w', newline='') as csvfile:
+            writer = csv.writer(csvfile)
+            
+            # Write headers based on dynamic visit attributes
+            headers = list(visit_data.keys())
+            writer.writerow(headers)
+            
+            # Write visit data row
+            writer.writerow([visit_data[key] for key in headers])
+
+        print(f"CSV generated for visit: {filepath}")
+        return filename
+    except Exception as e:
+        print(f"Unexpected error generating CSV for visit: {e}")
+        raise
+
+def generate_csv_for_remedial_actions(visit, inspections):
+    try:
+        # Construct the filename for remedial actions CSV
+        filename = f"{visit.properties_business_entity}.{visit.id}-PWR-{visit.inspection_date.strftime('%d%m%Y')}-{visit.id}_REMEDIALACTIONS.csv"
+        filepath = os.path.join(app.config['PROCESSED_FOLDER'], filename)
+
+        # Create CSV for remedial actions
+        with open(filepath, 'w', newline='') as csvfile:
+            writer = csv.writer(csvfile)
+
+            # Write headers dynamically, excluding 'id' and 'visit_id'
+            if inspections:
+                first_inspection = inspections[0]
+                headers = [key for key in first_inspection.keys() if key not in ['id', 'visit_id']]
+                writer.writerow(headers)
+
+                # Write rows for each inspection entry
+                for inspection in inspections:
+                    writer.writerow([inspection[key] for key in headers])
+
+        print(f"CSV generated for remedial actions: {filepath}")
+        return filename
+    except Exception as e:
+        print(f"Unexpected error generating CSV for remedial actions: {e}")
+        raise
+
+def generate_report_package(visit, inspections):
+    try:
+        # Generate filenames and paths
+        pdf_filename = visit.document
+        visit_csv = generate_csv_for_visit(visit)
+        remedial_actions_csv = generate_csv_for_remedial_actions(visit, inspections)
+
+        processed_folder = app.config['PROCESSED_FOLDER']
+        pdf_path = os.path.join(processed_folder, pdf_filename)
+        visit_csv_path = os.path.join(processed_folder, visit_csv)
+        remedial_csv_path = os.path.join(processed_folder, remedial_actions_csv)
+
+        zip_filename = f"{visit.properties_business_entity}.{visit.id}-PWR-{visit.inspection_date.strftime('%d%m%Y')}-{visit.id}.zip"
+        zip_path = os.path.join(processed_folder, zip_filename)
+
+        # Create a zip file containing the PDF and both CSVs
+        with zipfile.ZipFile(zip_path, 'w') as zipf:
+            if os.path.exists(pdf_path):
+                zipf.write(pdf_path, os.path.basename(pdf_path))
+            if os.path.exists(visit_csv_path):
+                zipf.write(visit_csv_path, os.path.basename(visit_csv_path))
+            if os.path.exists(remedial_csv_path):
+                zipf.write(remedial_csv_path, os.path.basename(remedial_csv_path))
+
+        # Store the full static path in the link column
+        visit.link = f"/static/processed/{zip_filename}"
+        db.session.commit()
+
+        print(f"Report package generated at {zip_path}")
+        return zip_path
+    except Exception as e:
+        print(f"Error generating report package: {e}")
+        raise
+
 @app.route('/aecom', methods=['GET', 'POST'])
 @login_required
 def aecom():
@@ -727,6 +800,54 @@ def aecom():
         return redirect(url_for('dashboard'))
 
     return redirect(url_for('dashboard'))
+
+@app.route('/api/aecom/historic-reports')
+@login_required
+def api_get_aecom_historic_reports():
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 10, type=int)
+
+    print(f"Fetching AECOM reports: page {page}, per_page {per_page}")
+    reports = Visit.query.paginate(page=page, per_page=per_page)  
+    print(f"Found {reports.total} reports for AECOM.")
+
+    report_list = [
+        {
+            'id': report.id,
+            'site_name': report.site_name,
+            'items_inspected': len(report.inspections),
+            'visit_date': report.inspection_date.strftime('%Y-%m-%d'),
+            'link': report.link  # Corrected from 'visit.link' to 'report.link'
+        } for report in reports.items
+    ]
+
+    return jsonify({
+        'reports': report_list,
+        'total': reports.total,
+        'pages': reports.pages,
+        'current_page': reports.page
+    })
+
+# Route to delete an AECOM historic report
+@app.route('/api/aecom/historic-reports/<int:report_id>', methods=['DELETE'])
+@login_required
+def api_delete_aecom_historic_report(report_id):
+    if current_user.access_level != 'Admin':
+        return jsonify({'error': 'Unauthorized access'}), 403
+
+    # Fetch the report by ID
+    report = Visit.query.get(report_id)
+    if report and report.properties_business_entity == 'AECOM':
+        try:
+            db.session.delete(report)
+            db.session.commit()
+            return jsonify({'success': 'Report deleted'}), 200
+        except Exception as e:
+            db.session.rollback()
+            logging.error(f"Failed to delete report {report_id}: {e}")
+            return jsonify({'error': 'Failed to delete report'}), 500
+    else:
+        return jsonify({'error': 'Report not found'}), 404
 
 ### END OF AECOM CODE ########################################
 ### END OF AECOM CODE ########################################

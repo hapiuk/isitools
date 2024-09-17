@@ -1,0 +1,2 @@
+compliance_or_asset_ref_no,contractor,document,remedial_works,comments,exclude_from_kpi,properties_business_entity,link,inspection_date,external_inspection_ref_no,risk_rating,archive,inspection_fully_completed,site_name
+test.1.PWR,ISI,test.1.-PWR-12092024-16334.pdf,Yes,,False,test.1.,/static/processed/test.1.-PWR-12092024-16334.pdf,2024-09-12,test.1.-PWR-12092024-16334,,False,True,OXFORD DO/OFF

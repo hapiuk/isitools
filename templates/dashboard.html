@@ -136,14 +136,15 @@
         <div class="modal-content">
             <span class="close" onclick="closeModal('aecomModal')">&times;</span>
             <h2>Process AECOM Reports</h2>
-                <form class="modal-form" action="{{ url_for('aecom') }}" method="POST" enctype="multipart/form-data">
-                    <input type="text" name="business_entity" placeholder="Business Entity" class="form-input" required>
-                    <div class="file-upload">
-                        <input type="file" name="report_files" multiple class="file-input" required>
-                        <span class="file-count">0 files selected</span>
-                    </div>
-                    <button type="submit" class="process-button">Process Reports</button>
-                </form>
+            <form class="modal-form" action="{{ url_for('aecom') }}" method="POST" enctype="multipart/form-data">
+                <input type="text" name="business_entity" placeholder="Business Entity" class="form-input" required>
+                <div class="file-upload">
+                    <input type="file" name="report_files" multiple class="file-input" required>
+                    <span class="file-count">0 files selected</span>
+                </div>
+                <button type="submit" class="process-button">Process Reports</button>
+            </form>
+            <button type="button" class="view-historic-button" onclick="fetchHistoricReports(); openModal('historicReportsModal')">View Historic Reports</button>
         </div>
     </div>
 
@@ -158,15 +159,21 @@
                     <thead>
                         <tr>
                             <th>Site Name</th>
-                            <th>Items Inspected</th>
+                            <th>Assets</th>
                             <th>Visit Date</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody id="aecomReportsTableBody">
-                        <!-- Report rows will be populated dynamically -->
+                        <!-- Rows will be dynamically populated here -->
                     </tbody>
                 </table>
+                <!-- Pagination Controls -->
+                <div class="pagination">
+                    <button class="page-button previous-button aecom" onclick="changePage(-1, 'aecom')">Previous</button>
+                    <span id="aecomPageNumber">1</span>
+                    <button class="page-button next-button aecom" onclick="changePage(1, 'aecom')">Next</button>
+                </div>
             </div>
         </div>
     </div>
@@ -563,6 +570,5 @@
 
     <!-- Include JavaScript Files -->
     <script src="{{ url_for('static', filename='js/scripts.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/aecom.js') }}"></script>
 </body>
 </html>
