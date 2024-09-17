@@ -372,7 +372,6 @@ body {
     border: 1px solid #ddd; /* Light border for definition */
     text-align: center; /* Center text for a clean layout */
     transition: all 0.3s ease; /* Smooth transition for better UX */
-    border-radius: 8px; /* Rounded corners */
     animation: fadeIn 0.3s ease-in-out; /* Animation for a smoother appearance */
 }
 
@@ -396,7 +395,6 @@ body {
     padding: 12px; /* Increased padding for consistent height with button */
     font-size: 16px;
     border: 1px solid #ddd;
-    border-radius: 0; /* Square edges */
     margin-right: -1px; /* Prevents gap between input and button */
     box-sizing: border-box; /* Include padding and border in element’s width */
     width: 49%;
@@ -514,7 +512,6 @@ body {
     cursor: pointer;
     flex: 1;
     margin-right: 10px;
-    border-radius: 0; /* Square edges */
 }
 
 .upload-button:hover {
@@ -536,7 +533,17 @@ body {
     font-size: 16px;
     cursor: pointer;
     width: 100%;
-    border-radius: 0; /* Square edges */
+    margin-top: 10px;
+}
+
+input#file-upload-button {
+    background-color: #0F70B7;
+    color: white;
+    border: none;
+    padding: 15px;
+    font-size: 16px;
+    cursor: pointer;
+    width: 100%;
     margin-top: 10px;
 }
 
@@ -579,7 +586,6 @@ body {
     border: none;
     padding: 10px 0; /* Padding for height consistency */
     cursor: pointer;
-    border-radius: 0; /* Square edges */
     box-sizing: border-box; /* Include padding and border in the button's total width */
 }
 
@@ -597,7 +603,6 @@ body {
     border: none;
     margin-top: 20px;
     cursor: pointer;
-    border-radius: 0;
     transition: background-color 0.3s ease;
 }
 
@@ -634,7 +639,6 @@ body {
     border: none;
     padding: 10px 0; /* Padding for height consistency */
     cursor: pointer;
-    border-radius: 0; /* Square edges */
     box-sizing: border-box; /* Include padding and border in the button's total width */
 }
 
@@ -652,7 +656,6 @@ body {
     border: none;
     margin-top: 20px;
     cursor: pointer;
-    border-radius: 0;
     transition: background-color 0.3s ease;
 }
 
@@ -688,7 +691,6 @@ body {
     border: none;
     padding: 5px 10px;
     cursor: pointer;
-    border-radius: 0; /* Square edges */
 }
 
 .download-button:hover {
@@ -718,7 +720,6 @@ body {
     border: none;
     padding: 10px 15px;
     cursor: pointer;
-    border-radius: 0; /* Square edges */
 }
 
 .previous-button {
@@ -751,7 +752,6 @@ body {
     padding: 10px;
     font-size: 16px;
     border: 1px solid #ddd;
-    border-radius: 0; /* Square edges */
     box-sizing: border-box;
 }
 
@@ -763,7 +763,6 @@ body {
     color: white;
     border: none;
     cursor: not-allowed;
-    border-radius: 0; /* Square edges */
     transition: background-color 0.3s ease;
 }
 

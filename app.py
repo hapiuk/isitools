@@ -1,24 +1,16 @@
+import os, smtplib, random, string, requests, base64, logging, secrets, re
+from datetime import date, datetime, timedelta, timezone
 from flask import Flask, render_template, redirect, url_for, request, flash, jsonify
-from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user, UserMixin
 from flask_migrate import Migrate
 from flask_mail import Mail, Message
-from PyPDF2 import PdfMerger
+from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import text 
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
-from datetime import datetime, timedelta, timezone
-import os
-import re
-import smtplib
-import random
-import string
-import requests
-import base64
-import logging
-import secrets
-import pandas as pd
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from PyPDF2 import PdfReader
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -46,14 +38,7 @@ migrate = Migrate(app, db)  # Initialize Flask-Migrate
 
 # Initialize the LoginManager
 login_manager = LoginManager(app)
-login_manager.login_view = 'login'  
-
-
-# Import and register blueprints AFTER app and extensions are initialized
-from aecom import aecom_blueprint  # Import the AECOM blueprint
-
-# Register the AECOM blueprint
-app.register_blueprint(aecom_blueprint, url_prefix='/aecom')
+login_manager.login_view = 'login'
 
 # User model for authentication
 class User(UserMixin, db.Model):
@@ -114,11 +99,13 @@ class Visit(db.Model):
     inspection_fully_completed = db.Column(db.Boolean, default=True)
     properties_business_entity = db.Column(db.String)
     site_name = db.Column(db.String)
+    link = db.Column(db.String)  # New column for the download link
+    inspections = db.relationship('Inspection', backref='visit', lazy=True)  # Establish relationship
 
 class Inspection(db.Model):
     __tablename__ = 'inspections'
     id = db.Column(db.Integer, primary_key=True)
-    visit_id = db.Column(db.Integer, db.ForeignKey('visits.id'), nullable=False)
+    visit_id = db.Column(db.Integer, db.ForeignKey('visits.id'), nullable=False)  # Link to Visit table
     inspection_ref_no = db.Column(db.String, nullable=False)
     remedial_reference_number = db.Column(db.String)
     action_owner = db.Column(db.String, default='NSC')
@@ -135,9 +122,6 @@ class Inspection(db.Model):
     compliance_or_asset_type_external_ref_no = db.Column(db.String)
     properties_business_entity = db.Column(db.String)
     site_name = db.Column(db.String)
-    
-    # Relationship to Visit
-    visit = db.relationship('Visit', backref=db.backref('inspections', lazy=True))
 
 def get_oauth_token():
     settings = EmailSettings.query.first()
@@ -271,237 +255,519 @@ def send_user_email(to_address, subject, password):
 with app.app_context():
     db.create_all()  # This will create the email_settings table if it doesn't exist
 
-# AECOM CODE #########################################
-# AECOM CODE #########################################
-# AECOM CODE #########################################
-
-@app.route('/upload_reports', methods=['POST'])
-@login_required
-def upload_reports():
-    business_entity = request.form['business_entity']
-    files = request.files.getlist('report_files')
-
-    # Clear the upload folder before processing new files
-    clear_folder(app.config['UPLOAD_FOLDER'])
-
-    # Save uploaded files
-    saved_files = []
-    for file in files:
-        if file and file.filename.endswith('.pdf'):
-            filename = secure_filename(file.filename)
-            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            file.save(filepath)
-            saved_files.append(filepath)
-
-    if not saved_files:
-        flash('No valid PDF files uploaded.', 'error')
-        return redirect(url_for('dashboard'))
-
-    # Process the uploaded reports
-    zip_path = process_reports(saved_files, business_entity)
-
-    # Optionally log the job in historic records
-    # log_historic_job(current_user.id, business_entity, zip_path)
-
-    return send_file(zip_path, as_attachment=True)
-
-def clear_folder(folder):
-    for filename in os.listdir(folder):
-        file_path = os.path.join(folder, filename)
+def clear_input_folder(folder_path):
+    # Ensure the folder exists
+    if not os.path.exists(folder_path):
+        os.makedirs(folder_path)
+    # Clear the folder contents
+    for filename in os.listdir(folder_path):
+        file_path = os.path.join(folder_path, filename)
         try:
-            if os.path.isfile(file_path):
-                os.unlink(file_path)
+            if os.path.isfile(file_path) or os.path.islink(file_path):
+                os.unlink(file_path)  # Remove file or link
+            elif os.path.isdir(file_path):
+                os.rmdir(file_path)   # Remove directory
         except Exception as e:
             print(f'Failed to delete {file_path}. Reason: {e}')
 
-def process_reports(filepaths, business_entity):
-    # Extract data from PDFs
-    extracted_data = [extract_information_from_pdf(filepath, business_entity) for filepath in filepaths]
+def allowed_file(filename, allowed_extensions):
+    # Check if the file has a valid extension
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed_extensions
 
-    # Store data into the database
-    for data in extracted_data:
-        store_data_in_database(data)
 
-    # Generate output files
-    visit_csv, inspection_csv, merged_pdf = generate_output_files(extracted_data, business_entity)
+def initialize_email_settings():
+    if not EmailSettings.query.first():
+        default_settings = EmailSettings(
+            mail_server='smtp.example.com',
+            mail_port=587,
+            email_username='user@example.com',
+            email_password='securepassword',
+            use_tls=True,
+            use_ssl=False,
+            default_sender_name='Default Name',
+            default_sender_email='default@example.com'
+        )
+        db.session.add(default_settings)
+        db.session.commit()
 
-    # Zip the output files
-    zip_filename = f"{business_entity}_processed_{datetime.now().strftime('%Y%m%d_%H%M%S')}.zip"
-    zip_filepath = os.path.join(app.config['PROCESSED_FOLDER'], zip_filename)
-    with zipfile.ZipFile(zip_filepath, 'w') as zipf:
-        zipf.write(visit_csv, os.path.basename(visit_csv))
-        zipf.write(inspection_csv, os.path.basename(inspection_csv))
-        zipf.write(merged_pdf, os.path.basename(merged_pdf))
+with app.app_context():
+    initialize_email_settings()
 
-    # Clear the upload folder after processing
-    clear_folder(app.config['UPLOAD_FOLDER'])
+# AECOM CODE #########################################
+# AECOM CODE #########################################
+# AECOM CODE #########################################
 
-    return zip_filepath
+def clear_folder(folder_path):
+    for filename in os.listdir(folder_path):
+        file_path = os.path.join(folder_path, filename)
+        try:
+            if os.path.isfile(file_path):
+                os.remove(file_path)
+        except Exception as e:
+            print(f"Failed to delete {file_path}. Reason: {e}")
 
-def extract_information_from_pdf(filepath, business_entity):
-    # Extract text from PDF
-    text = extract_text_from_pdf(filepath)
-
-    # Extract information using your provided logic
-    return extract_information(text, business_entity)
-
-def extract_text_from_pdf(filepath):
-    from pdfplumber import open as pdf_open
+def extract_text_from_pdf(pdf_path):
+    reader = PdfReader(pdf_path)
     text = ""
-    with pdf_open(filepath) as pdf:
-        for page in pdf.pages:
-            text += page.extract_text(x_tolerance=2)
+    for page in reader.pages:
+        text += page.extract_text()
+    
+    # Print or log the extracted text for inspection
+    print(f"Extracted Text from {pdf_path}:\n{text}\n{'='*50}")
+    
     return text
+def construct_report_link(site_name, business_entity, visit_id):
+    # Construct the zip file name
+    zip_filename = f"{site_name}_{business_entity}_{visit_id}.zip"
+    # Construct the full link
+    report_link = f"http://isitools.local:5000/static/processed/{zip_filename}"
+    return report_link
 
-def store_data_in_database(info):
-    with app.app_context():
-        visit = Visit(
-            compliance_or_asset_ref_no=info['Compliance or Asset Type_External Ref No'],
-            external_inspection_ref_no=info['Inspection Ref No'],
-            inspection_date=datetime.strptime(info['Date Action Raised'], '%d/%m/%Y') if info['Date Action Raised'] else None,
-            contractor='ISI',
-            document=info.get('Document', ''),
-            remedial_works='Yes' if info['Remedial Works Action Required Notes'] else 'No',
-            properties_business_entity=info['Properties_Business Entity'],
-            site_name=info['Site name']
-        )
-        db.session.add(visit)
-        db.session.commit()
-        inspection = Inspection(
-            visit_id=visit.id,
-            inspection_ref_no=info['Inspection Ref No'],
-            remedial_reference_number=info['Remedial Reference Number'],
-            action_owner=info['Action Owner'],
-            date_action_raised=datetime.strptime(info['Date Action Raised'], '%d/%m/%Y') if info['Date Action Raised'] else None,
-            corrective_job_number=info['Corrective Job Number'],
-            remedial_works_action_required_notes=info['Remedial Works Action Required Notes'],
-            priority=info['Priority'],
-            target_completion_date=datetime.strptime(info['Target Completion Date'], '%d/%m/%Y') if info['Target Completion Date'] else None,
-            pic_comments=info['PiC Comments'],
-            supplementary_notes=info['Supplementary Notes'],
-            property_inspection_ref_no=info['Property Inspection Ref No'],
-            send_email=info['Send Email'],
-            compliance_or_asset_type_external_ref_no=info['Compliance or Asset Type_External Ref No'],
-            properties_business_entity=info['Properties_Business Entity'],
-            site_name=info['Site name']
-        )
-        db.session.add(inspection)
-        db.session.commit()
+def process_date(date_value):
+    # Converts a datetime object to a date object; if None, return as is
+    if isinstance(date_value, datetime):
+        return date_value.date()
+    return date_value
 
-def extract_information(text, business_entity):
-    # Extract information using regular expressions as defined in your logic
+def get_highest_severity(inspection_entries):
+    severity_levels = {
+        'Intolerable': 1,
+        'Substantial': 2,
+        'Moderate': 3,
+        'Tolerable': 4,
+        'Clear': 5,
+        'Asset Not Inspected': 6
+    }
+
+    min_severity = float('inf')
+    for entry in inspection_entries:
+        priority = entry.get('priority', 'Clear')
+        severity = severity_levels.get(priority, 5)  # Default to 'Clear' if priority not found
+        if severity < min_severity:
+            min_severity = severity
+    return min_severity
+
+def merge_pdfs(upload_folder, processed_folder, pdf_files, output_filename, cover_pdf=None):
+    from PyPDF2 import PdfMerger
+
+    merger = PdfMerger()
+
+    # Add the cover PDF first if it exists
+    if cover_pdf and os.path.exists(cover_pdf):
+        print(f"Adding cover PDF to merger: {cover_pdf}")
+        merger.append(cover_pdf)
+
+    # Sort the PDFs by severity (lower number means higher severity)
+    pdf_files_sorted = sorted(pdf_files, key=lambda x: x[1])
+
+    # Append the rest of the PDFs
+    for pdf_path, severity in pdf_files_sorted:
+        print(f"Adding inspection PDF to merger: {pdf_path} with severity {severity}")
+        merger.append(pdf_path)
+
+    # Ensure the processed folder exists
+    os.makedirs(processed_folder, exist_ok=True)
+
+    # Save the merged PDF
+    output_path = os.path.join(processed_folder, output_filename)
+    with open(output_path, 'wb') as f_out:
+        merger.write(f_out)
+
+    merger.close()
+    print(f"Merged PDF saved to: {output_path}")
+
+def extract_information_from_pdf(text, business_entity):
+    # Detect if the document is a Notice of Non-Examination
+    is_non_examination = 'Notice of Non-Examination' in text
+
+    # Extract key identifiers
     inspection_no = re.search(r"#InspectionID#\s*(\d+)", text)
+    inspection_id = inspection_no.group(1) if inspection_no else ''
     job_no = re.search(r"#JobID#\s*(\d+)", text)
     client_id = re.search(r"#ClientID#\s*(.+)", text)
     serial_no = re.search(r"#SerialNumber#\s*(.+)", text)
-    date = re.search(r"#VisitDate#\s*(\d{2}/\d{2}/\d{4})", text)
+    date_match = re.search(r"#VisitDate#\s*(\d{2}/\d{2}/\d{4})", text)
+    site_name_match = re.search(r"Site\s*(.+)", text)
 
-    intolerable = re.search(r"Intolerable - Defects requiring immediate action\s*(.+)", text)
-    substantial = re.search(r"Substantial - Defects requiring attention within a(?:\stime period)?\s*(.+)", text)
-    moderate = re.search(r"Moderate - Other defects requiring attention\s*(.+)", text)
-
-    priority = ""
-    if intolerable and intolerable.group(1).strip().lower() not in ["", "none"]:
-        priority = "Intolerable"
-    elif substantial and substantial.group(1).strip().lower() not in ["", "none"]:
-        priority = "Substantial"
-    elif moderate and moderate.group(1).strip().lower() not in ["", "none"]:
-        priority = "Moderate"
-
-    remedial_works = []
-    if intolerable and intolerable.group(1).strip().lower() != "none":
-        remedial_works.append(intolerable.group(1).strip())
-    if substantial and substantial.group(1).strip().lower() != "none":
-        remedial_works.append(substantial.group(1).strip())
-    if moderate and moderate.group(1).strip().lower() != "none":
-        remedial_works.append(moderate.group(1).strip())
-
-    remedial_works_notes = " ".join(remedial_works)
-
-    if date:
-        date_action_raised = datetime.strptime(date.group(1), "%d/%m/%Y")
+    # Parse dates
+    if date_match:
+        date_action_raised = datetime.strptime(date_match.group(1), "%d/%m/%Y")
         formatted_date = date_action_raised.strftime("%d%m%Y")
-
-        if priority == "Moderate":
-            target_date = date_action_raised + timedelta(days=180)
-        elif priority == "Substantial":
-            target_date = date_action_raised + timedelta(days=30)
-        elif priority == "Intolerable":
-            target_date = date_action_raised + timedelta(days=7)
-        else:
-            target_date = None
-
-        if target_date:
-            target_completion_date = target_date.strftime("%d/%m/%Y")
-        else:
-            target_completion_date = ""
     else:
-        target_completion_date = ""
+        date_action_raised = None
+        formatted_date = ""
 
-    # Determine if remedial works were processed
-    remedial_works_processed = bool(remedial_works)
+    # Extract site name
+    if site_name_match:
+        site_name = site_name_match.group(1).strip()
+    else:
+        site_name = "UnknownSite"
 
-    # Update the value for "Remedial Works" dynamically
-    remedial_works_value = "Yes" if remedial_works_processed else "No"
-
-    info = {
-        "Inspection Ref No": f"{business_entity}-PWR-{formatted_date}-{job_no.group(1) if job_no else ''}",
-        "Remedial Reference Number": f"{business_entity}-PWR-{formatted_date}-{job_no.group(1) if job_no else ''}-{inspection_no.group(1) if inspection_no else ''}",
-        "Action Owner": "NSC",
-        "Date Action Raised": date.group(1) if date else "",
-        "Corrective Job Number": "",
-        "Remedial Works Action Required Notes": f"{remedial_works_notes} - Client-ID:{client_id.group(1)}, - Serial Number:{serial_no.group(1)}",
-        "Priority": priority,
-        "Target Completion Date": target_completion_date,
-        "Actual Completion Date": "",
-        "PiC Comments": "",
-        "Property Inspection Ref No": "",
-        "Compliance or Asset Type_External Ref No": f"{business_entity}PWR",
-        "Properties_Business Entity": business_entity,
-        "Site name": "",  # Set appropriately as needed
+    # Generate base info
+    inspection_ref_no = f"{business_entity}-PWR-{formatted_date}-{job_no.group(1) if job_no else ''}"
+    base_info = {
+        "compliance_or_asset_ref_no": f"{business_entity}PWR",
+        "external_inspection_ref_no": inspection_ref_no,
+        "inspection_date": date_action_raised.date() if date_action_raised else None,
+        "contractor": 'ISI',
+        "comments": "",  # Leave comments blank for the client
+        "site_name": site_name,
+        "properties_business_entity": business_entity,
+        "actual_completion_date": None  # Initially set to None
     }
 
-    return info
+    # Initialize inspection_entries list
+    inspection_entries = []
 
-def generate_output_files(extracted_data, business_entity):
-    # Generate CSV for visits
-    visit_csv = generate_visit_csv(extracted_data, business_entity)
-    # Generate CSV for inspections
-    inspection_csv = generate_inspection_csv(extracted_data, business_entity)
-    # Merge PDFs
-    merged_pdf = merge_pdfs([data['filepath'] for data in extracted_data], business_entity)
-    return visit_csv, inspection_csv, merged_pdf
+    if is_non_examination:
+        # Extract the reason for non-inspection
+        reason_match = re.search(r"Reason equipment was not inspected\s*(.+?)(?=#+|Engineer|$)", text, re.DOTALL)
+        reason = reason_match.group(1).strip() if reason_match else "No reason provided."
+        reason = ' '.join(reason.split())  # Remove line breaks and extra spaces
 
-def generate_visit_csv(data, business_entity):
-    visit_csv_path = os.path.join(app.config['PROCESSED_FOLDER'], f"{business_entity}_visits.csv")
-    df = pd.DataFrame(data)  # Ensure data is formatted correctly for CSV
-    df.to_csv(visit_csv_path, index=False)
-    return visit_csv_path
+        # Construct remedial_reference_number
+        remedial_reference_number = f"{inspection_ref_no}-{inspection_id}"
 
-def generate_inspection_csv(data, business_entity):
-    inspection_csv_path = os.path.join(app.config['PROCESSED_FOLDER'], f"{business_entity}_inspections.csv")
-    df = pd.DataFrame(data)  # Ensure data is formatted correctly for CSV
-    df.to_csv(inspection_csv_path, index=False)
-    return inspection_csv_path
+        # Create the inspection entry
+        inspection_entry = {
+            "visit_id": None,  # Will be set later after the visit is inserted
+            "inspection_ref_no": inspection_ref_no,
+            "remedial_reference_number": remedial_reference_number,
+            "action_owner": 'NSC',
+            "date_action_raised": date_action_raised.date() if date_action_raised else None,
+            "corrective_job_number": '',
+            "remedial_works_action_required_notes": reason,
+            "priority": 'Asset Not Inspected',
+            "target_completion_date": None,
+            "actual_completion_date": None,
+            "pic_comments": '',
+            "supplementary_notes": '',
+            "property_inspection_ref_no": '',
+            "send_email": False,
+            "compliance_or_asset_type_external_ref_no": base_info['compliance_or_asset_ref_no'],
+            "properties_business_entity": base_info['properties_business_entity'],
+            "site_name": base_info['site_name']
+        }
 
-def merge_pdfs(pdf_paths, business_entity):
-    merged_pdf_path = os.path.join(app.config['MERGED_FOLDER'], f"{business_entity}_merged.pdf")
-    merger = PdfMerger()
-    for pdf in pdf_paths:
-        merger.append(pdf)
-    merger.write(merged_pdf_path)
-    merger.close()
-    return merged_pdf_path
+        inspection_entries.append(inspection_entry)
 
+    else:
+        # Existing logic for standard inspection reports
+        # Extract all defects
+        defects = []
+        defect_patterns = [
+            ('Intolerable', r"Intolerable - Defects requiring immediate action\s*(.+?)(?=Substantial|Moderate|Tolerable|#|$)"),
+            ('Substantial', r"Substantial - Defects requiring attention within a(?:\s*time period)?\s*(.+?)(?=Intolerable|Moderate|Tolerable|#|$)"),
+            ('Moderate', r"Moderate - Other defects requiring attention\s*(.+?)(?=Intolerable|Substantial|Tolerable|#|$)"),
+            ('Tolerable', r"Tolerable - Observations\s*(.+?)(?=Intolerable|Substantial|Moderate|#|$)")
+        ]
+
+        for priority, pattern in defect_patterns:
+            matches = re.findall(pattern, text, re.DOTALL)
+            for match in matches:
+                defect_description = match.strip()
+                if defect_description and defect_description.lower() != 'none':
+                    # Remove line breaks from the defect description
+                    defect_description = ' '.join(defect_description.split())
+                    defects.append({
+                        'priority': priority,
+                        'description': defect_description
+                    })
+
+        # Generate a list of inspection entries
+        if defects:
+            for defect in defects:
+                priority = defect['priority']
+                description = defect['description']
+
+                # Append Client ID and Serial Number to remedial works, remove line breaks
+                client_info = f"Client-ID: {client_id.group(1).strip() if client_id else 'N/A'}, Serial Number: {serial_no.group(1).strip() if serial_no else 'N/A'}"
+                remedial_works = f"{description} {client_info}"
+
+                # Remove any additional line breaks from remedial works
+                remedial_works = ' '.join(remedial_works.split())
+
+                # Calculate target completion date based on priority
+                if date_action_raised:
+                    if priority == "Intolerable":
+                        target_date = date_action_raised + timedelta(days=7)
+                    elif priority == "Substantial":
+                        target_date = date_action_raised + timedelta(days=30)
+                    elif priority == "Moderate":
+                        target_date = date_action_raised + timedelta(days=180)
+                    elif priority == "Tolerable":
+                        target_date = date_action_raised + timedelta(days=365)
+                    else:
+                        target_date = None
+                    target_completion_date = target_date.date() if target_date else None
+                else:
+                    target_completion_date = None
+
+                # Construct remedial_reference_number
+                remedial_reference_number = f"{inspection_ref_no}-{inspection_id}"
+
+                # Create the inspection entry
+                inspection_entry = {
+                    "visit_id": None,  # Will be set later after the visit is inserted
+                    "inspection_ref_no": inspection_ref_no,
+                    "remedial_reference_number": remedial_reference_number,
+                    "action_owner": 'NSC',
+                    "date_action_raised": date_action_raised.date() if date_action_raised else None,
+                    "corrective_job_number": '',
+                    "remedial_works_action_required_notes": remedial_works,
+                    "priority": priority,
+                    "target_completion_date": target_completion_date,
+                    "actual_completion_date": None,
+                    "pic_comments": '',
+                    "supplementary_notes": '',
+                    "property_inspection_ref_no": '',
+                    "send_email": False,
+                    "compliance_or_asset_type_external_ref_no": base_info['compliance_or_asset_ref_no'],
+                    "properties_business_entity": base_info['properties_business_entity'],
+                    "site_name": base_info['site_name']
+                }
+
+                inspection_entries.append(inspection_entry)
+        else:
+            # No defects found; create a default inspection entry
+            remedial_works = "No defects found."
+            remedial_reference_number = f"{inspection_ref_no}-{inspection_id}"
+            priority = 'Clear'  # Set default priority to 'Clear'
+
+            # Calculate target completion date (365 days from date_action_raised)
+            if date_action_raised:
+                target_date = date_action_raised + timedelta(days=365)
+                target_completion_date = target_date.date()
+            else:
+                target_completion_date = None
+
+            inspection_entry = {
+                "visit_id": None,  # Will be set later after the visit is inserted
+                "inspection_ref_no": inspection_ref_no,
+                "remedial_reference_number": remedial_reference_number,
+                "action_owner": 'NSC',
+                "date_action_raised": date_action_raised.date() if date_action_raised else None,
+                "corrective_job_number": '',
+                "remedial_works_action_required_notes": remedial_works,
+                "priority": priority,
+                "target_completion_date": target_completion_date,
+                "actual_completion_date": None,
+                "pic_comments": '',
+                "supplementary_notes": '',
+                "property_inspection_ref_no": '',
+                "send_email": False,
+                "compliance_or_asset_type_external_ref_no": base_info['compliance_or_asset_ref_no'],
+                "properties_business_entity": base_info['properties_business_entity'],
+                "site_name": base_info['site_name']
+            }
+
+            inspection_entries.append(inspection_entry)
+
+    return base_info, inspection_entries
+
+def process_uploaded_pdfs(business_entity):
+    upload_folder = app.config['UPLOAD_FOLDER']
+    processed_folder = app.config['PROCESSED_FOLDER']
+
+    # Remove the line that clears the processed folder
+
+    visit_data = None
+    inspections_data = []
+    has_remedial_works = False  # Flag to track if high-priority defects exist
+    pdf_files = []
+    cover_pdf = None
+
+    for filename in os.listdir(upload_folder):
+        if filename.endswith(".pdf"):
+            pdf_path = os.path.join(upload_folder, filename)
+
+            # Update the regex pattern to match 'Job_#####.pdf' or 'Job #####.pdf'
+            if re.match(r'Job[_ ]\d+\.pdf', filename):
+                cover_pdf = pdf_path
+                print(f"Cover PDF identified: {filename}")
+                continue  # Skip processing the cover PDF as an inspection PDF
+
+            text = extract_text_from_pdf(pdf_path)
+
+            # Extract data from the PDF
+            base_info, inspection_entries = extract_information_from_pdf(text, business_entity)
+
+            # Use the first PDF's base_info for the visit
+            if not visit_data and base_info:
+                visit_data = base_info.copy()
+
+            # Check for high-priority defects
+            for entry in inspection_entries:
+                if entry['priority'] in ['Moderate', 'Substantial', 'Intolerable']:
+                    has_remedial_works = True
+
+            # Add all inspection entries
+            inspections_data.extend(inspection_entries)
+
+            # Determine severity for sorting
+            highest_severity = get_highest_severity(inspection_entries)
+            pdf_files.append((pdf_path, highest_severity))
+
+    if visit_data:
+        # Set the 'document' field to External Inspection Ref No + '.pdf'
+        visit_data['document'] = visit_data['external_inspection_ref_no'] + '.pdf'
+
+        # Set 'remedial_works' to 'Yes' or 'No' as a string
+        visit_data['remedial_works'] = 'Yes' if has_remedial_works else 'No'
+
+        # Set 'risk_rating' to an empty string
+        visit_data['risk_rating'] = ''
+
+        # Set 'inspection_fully_completed' to True (since it's a Boolean)
+        visit_data['inspection_fully_completed'] = True
+
+        # Insert the visit entry and get the visit_id
+        visit_id = insert_visit(visit_data)
+
+        # Now set visit_id in each inspection entry
+        for inspection_data in inspections_data:
+            inspection_data['visit_id'] = visit_id
+
+        # Insert inspections linked to the visit ID
+        insert_inspections(inspections_data)
+
+        # Merge PDFs
+        merge_pdfs(upload_folder, processed_folder, pdf_files, visit_data['document'], cover_pdf)
+
+        # Clear the upload folder after processing
+        clear_folder(upload_folder)
+    else:
+        flash("No visit data extracted.", "error")
+
+
+def insert_visit(extracted_data):
+    try:
+        # Construct the download link using the 'document' field
+        download_link = f"http://isitools.local:5000/static/processed/{extracted_data['document']}"
+
+        visit = Visit(
+            compliance_or_asset_ref_no=extracted_data['compliance_or_asset_ref_no'],
+            external_inspection_ref_no=extracted_data['external_inspection_ref_no'],
+            inspection_date=extracted_data['inspection_date'],
+            contractor=extracted_data['contractor'],
+            document=extracted_data.get('document'),
+            remedial_works=extracted_data.get('remedial_works'),
+            risk_rating=extracted_data.get('risk_rating'),
+            comments=extracted_data.get('comments', ''),
+            archive=extracted_data.get('archive', False),
+            exclude_from_kpi=extracted_data.get('exclude_from_kpi', False),
+            inspection_fully_completed=extracted_data.get('inspection_fully_completed', True),
+            properties_business_entity=extracted_data['properties_business_entity'],
+            site_name=extracted_data['site_name'],
+            link=download_link
+        )
+
+        db.session.add(visit)
+        db.session.commit()
+        return visit.id
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Error inserting visit: {str(e)}", "error")
+        return None
+
+def insert_inspections(inspections_data):
+    for inspection_data in inspections_data:
+        inspection = Inspection(
+            visit_id=inspection_data['visit_id'],
+            inspection_ref_no=inspection_data['inspection_ref_no'],
+            remedial_reference_number=inspection_data['remedial_reference_number'],
+            action_owner=inspection_data['action_owner'],
+            date_action_raised=inspection_data['date_action_raised'],
+            corrective_job_number=inspection_data['corrective_job_number'],
+            remedial_works_action_required_notes=inspection_data['remedial_works_action_required_notes'],
+            priority=inspection_data['priority'],
+            target_completion_date=inspection_data['target_completion_date'],
+            actual_completion_date=inspection_data['actual_completion_date'],
+            pic_comments=inspection_data['pic_comments'],
+            supplementary_notes=inspection_data['supplementary_notes'],
+            property_inspection_ref_no=inspection_data['property_inspection_ref_no'],
+            send_email=inspection_data['send_email'],
+            compliance_or_asset_type_external_ref_no=inspection_data['compliance_or_asset_type_external_ref_no'],
+            properties_business_entity=inspection_data['properties_business_entity'],
+            site_name=inspection_data['site_name']
+        )
+        db.session.add(inspection)
+    db.session.commit()
+
+@app.route('/aecom', methods=['GET', 'POST'])
+@login_required
+def aecom():
+    if request.method == 'POST':
+        # Clear the upload folder before processing
+        clear_folder(app.config['UPLOAD_FOLDER'])
+
+        # Get business_entity from the form data
+        business_entity = request.form.get('business_entity', 'DefaultEntity')
+
+        files = request.files.getlist('report_files')
+        for file in files:
+            if file and allowed_file(file.filename, {'pdf'}):
+                filename = secure_filename(file.filename)
+                file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                file.save(file_path)
+                print(f"{filename} uploaded successfully.")
+            else:
+                flash("Invalid file type.", "error")
+                return redirect(url_for('dashboard'))
+
+        try:
+            # Pass business_entity to process_uploaded_pdfs
+            process_uploaded_pdfs(business_entity)
+            flash("Files processed and data inserted into the database successfully.", "success")
+        except Exception as e:
+            error_message = f"Error processing files: {str(e)}"
+            print(error_message)
+            flash(error_message, "error")
+
+        return redirect(url_for('dashboard'))
+
+    return redirect(url_for('dashboard'))
 
 ### END OF AECOM CODE ########################################
 ### END OF AECOM CODE ########################################
 ### END OF AECOM CODE ########################################
+
+@app.route('/process_puwer_reports', methods=['POST'])
+@login_required
+def process_puwer_reports():
+    flash('PUWER Processing has not been added yet.', 'info')
+    return redirect(url_for('dashboard'))
+
+@app.route('/process_loler_reports', methods=['POST'])
+@login_required
+def process_loler_reports():
+    flash('LOLER Processing has not been added yet.', 'info')
+    return redirect(url_for('dashboard'))
 
 # User loader callback for Flask-Login
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
+
+# Route for the dashboard (home page)
+@app.route('/')
+@login_required
+def dashboard():
+    user = current_user
+    # Ensure correct datetime usage for token handling
+    if not user.reset_token or user.reset_token_expiration < datetime.utcnow():
+        # Generate a new reset token
+        user.reset_token = secrets.token_urlsafe(64)
+        user.reset_token_expiration = datetime.now(timezone.utc) + timedelta(hours=1)
+        db.session.commit()
+    
+    email_settings = EmailSettings.query.first()
+    if not email_settings:
+        flash("Email settings are missing or not properly configured.", "error")
+        email_settings = {}  # Prevent template errors by using a default empty dict
+
+    # Render the dashboard with required data
+    return render_template('dashboard.html', email_settings=email_settings)
 
 # Route for the login page
 @app.route('/login', methods=['GET', 'POST'])
@@ -534,6 +800,10 @@ def logout():
     logout_user()
     flash('You have been logged out.', 'info')
     return redirect(url_for('login'))
+
+def generate_secure_random_password():
+    # Generates a secure random password
+    return secrets.token_urlsafe(16)
 
 def generate_reset_token(user):
     # Function that handles reset token generation and setting expiration
@@ -596,62 +866,6 @@ def reset_password(token):
         flash('The password reset link is invalid or has expired.', 'error')
         return redirect(url_for('login'))
 
-
-# Route for the dashboard (home page)
-@app.route('/')
-@login_required
-def dashboard():
-    user = current_user
-    if not user.reset_token or user.reset_token_expiration < datetime.utcnow():
-        # Generate a new reset token
-        user.reset_token = secrets.token_urlsafe(64)
-        user.reset_token_expiration = datetime.now(timezone.utc) + timedelta(hours=1)
-        db.session.commit()
-    
-    email_settings = EmailSettings.query.first()  # Assuming this is part of your current logic
-    return render_template('dashboard.html', email_settings=email_settings)
-
-# Route to process PUWER reports
-@app.route('/process_puwer_reports', methods=['POST'])
-@login_required
-def process_puwer_reports():
-    site_name = request.form['site_name']
-    report_files = request.files.getlist('report_files')
-
-    # Implement your logic to process the PUWER reports here
-
-    flash('PUWER reports processed successfully.', 'success')
-    return redirect(url_for('dashboard'))
-
-# Route to process LOLER reports
-@app.route('/process_loler_reports', methods=['POST'])
-@login_required
-def process_loler_reports():
-    site_name = request.form['site_name']
-    report_files = request.files.getlist('report_files')
-
-    # Implement your logic to process the LOLER reports here
-
-    flash('LOLER reports processed successfully.', 'success')
-    return redirect(url_for('dashboard'))
-
-# Route to process AECOM reports
-@app.route('/process_aecom_reports', methods=['POST'])
-@login_required
-def process_aecom_reports():
-    business_entity = request.form['business_entity']
-    report_files = request.files.getlist('report_files')
-
-    # Implement your logic to process the AECOM reports here
-
-    flash('AECOM reports processed successfully.', 'success')
-    return redirect(url_for('dashboard'))
-
-# Function to generate a random password
-def generate_random_password(length=12):
-    characters = string.ascii_letters + string.digits + string.punctuation
-    return ''.join(random.choice(characters) for i in range(length))
-
 # Route to create a new user
 @app.route('/create_user', methods=['POST'])
 @login_required
@@ -668,7 +882,7 @@ def create_user():
     access_level = request.form['access_level']
 
     # Generate a random password
-    password = generate_random_password()
+    password = generate_secure_random_password()
 
     # Check if the user already exists
     if User.query.filter_by(email=email).first():
@@ -690,7 +904,7 @@ def create_user():
 
     # Send the email to the user
     subject = "Your New Account Details"
-    body = f"Hello {first_name},\n\nYour account has been created. Your password is: {password}\nPlease change it upon your first login."
+    body = f"Hello {first_name},\n\nYour account has been created. Your password is: \n{password}\n\nPlease change it upon your first login."
     try:
         send_user_email(email, subject, body)
         flash('New user created successfully and email sent.', 'success')
@@ -698,6 +912,66 @@ def create_user():
         flash(f'User created but failed to send email: {str(e)}', 'error')
 
     return redirect(url_for('dashboard'))
+
+@app.route('/create_default_user', methods=['GET'])
+def create_default_user():
+    # Check if the default user already exists
+    existing_user = User.query.filter_by(email='it@isisafety.com').first()
+    if existing_user:
+        flash('Default user already exists.', 'info')
+        return redirect(url_for('login'))
+
+    # Generate a secure random password
+    random_password = generate_secure_random_password()
+
+    # Create the default admin user with provided details and a secure hashed password
+    default_user = User(
+        first_name="Default",
+        last_name="Admin",
+        email="it@isisafety.com",
+        department="hell",
+        location="underworld",
+        access_level="Admin",  # Ensure this matches your access level structure
+        password_hash=generate_password_hash(random_password)  # Generate and hash the secure password
+    )
+
+    try:
+        # Add and commit the user to bind it to the session
+        db.session.add(default_user)
+        db.session.commit()
+
+        # Re-query the user to ensure it is bound to the session
+        default_user = User.query.filter_by(email='it@isisafety.com').first()
+
+        # Generate a reset token and set expiration using your existing function
+        generate_reset_token(default_user)
+
+        # Construct the reset link using the token
+        reset_link = url_for('reset_password', token=default_user.reset_token, _external=True)
+
+        # Prepare the email content
+        subject = "Set Your Admin Account Password"
+        body = f"""
+        Dear Default Admin,
+
+        Your admin account has been created. Please set your password by clicking the link below:
+
+        {reset_link}
+
+        If you did not request this, please contact support.
+
+        Best regards,
+        Your Team
+        """
+        send_user_email(default_user.email, subject, body)
+
+        flash('Default admin user created. A password reset email has been sent to set the password.', 'success')
+    except Exception as e:
+        # Rollback in case of any failure
+        db.session.rollback()
+        flash(f'Failed to create default user or send password reset email: {str(e)}', 'error')
+
+    return redirect(url_for('login'))
 
 @app.route('/email_settings', methods=['POST'])
 @login_required
@@ -975,7 +1249,7 @@ def api_delete_contact(contact_id):
 # Error handlers
 @app.errorhandler(404)
 def page_not_found(e):
-    return render_template('404.html'), 404
+    return jsonify({'error': '404.'}), 404
 
 # Run the application
 if __name__ == '__main__':

@@ -136,14 +136,14 @@
         <div class="modal-content">
             <span class="close" onclick="closeModal('aecomModal')">&times;</span>
             <h2>Process AECOM Reports</h2>
-            <form class="modal-form" action="{{ url_for('upload_reports') }}" method="POST" enctype="multipart/form-data">
-                <input type="text" name="business_entity" placeholder="Business Entity" class="form-input" required>
-                <div class="file-upload">
-                    <input type="file" name="report_files" multiple class="file-input" required>
-                    <span class="file-count">0 files selected</span>
-                </div>
-                <button type="submit" class="process-button">Process Reports</button>
-            </form>
+                <form class="modal-form" action="{{ url_for('aecom') }}" method="POST" enctype="multipart/form-data">
+                    <input type="text" name="business_entity" placeholder="Business Entity" class="form-input" required>
+                    <div class="file-upload">
+                        <input type="file" name="report_files" multiple class="file-input" required>
+                        <span class="file-count">0 files selected</span>
+                    </div>
+                    <button type="submit" class="process-button">Process Reports</button>
+                </form>
         </div>
     </div>
 
@@ -389,7 +389,7 @@
             <form class="modal-form">
                 <!-- Mail Server -->
                 <div class="profile-item">
-                    <input type="text" id="mail_server" name="mail_server" class="profile-input" placeholder="Mail Server" value="{{ email_settings.mail_server }}" required>
+                    <input type="text" id="mail_server" name="mail_server" class="profile-input" placeholder="Mail Server" value="{{ email_settings.mail_server or '' }}" required>
                     <button type="submit" id="saveMailServer" class="save-button" onclick="updateEmailSettingsItem(event, 'mail_server', 'saveMailServer')" disabled>Save</button>
                 </div>
 
