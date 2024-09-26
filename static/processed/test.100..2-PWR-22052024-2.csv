@@ -1,0 +1,2 @@
+external_inspection_ref_no,inspection_date,risk_rating,archive,inspection_fully_completed,site_name,compliance_or_asset_ref_no,contractor,document,remedial_works,comments,exclude_from_kpi,properties_business_entity,link
+test.100.-PWR-22052024-14875,2024-05-22,,False,True,GREENFORD IND,test.100.PWR,ISI,test.100.-PWR-22052024-14875.pdf,Yes,,False,test.100.,/static/processed/test.100.-PWR-22052024-14875.pdf

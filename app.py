@@ -16,7 +16,7 @@ logging.basicConfig(level=logging.DEBUG)
 
 # Initialize the Flask application
 app = Flask(__name__)
-app.secret_key = 'your_secret_key'  # Replace with your actual secret key
+app.secret_key = 'isitools26092024'  # Replace with your actual secret key
 
 
 # Configure the SQLite database
@@ -1373,6 +1373,25 @@ def page_not_found(e):
     return jsonify({'error': '404.'}), 404
 
 # Run the application
-if __name__ == '__main__':
-    # Set debug to True for development; remember to set it to False in production
-    app.run(debug=True)
+if __name__ == "__main__":
+    import socket
+
+    def is_valid_ip(ip):
+        try:
+            socket.inet_aton(ip)
+            return True
+        except socket.error:
+            return False
+
+    ip_address = None
+    while True:
+        ip_address = input("Enter the IP address to run the app (e.g., 0.0.0.0): ")
+        if is_valid_ip(ip_address):
+            break
+        else:
+            print("Invalid IP address. Please enter a valid IP address.")
+
+    print(f"Running the app at IP address: {ip_address}")
+
+    app.secret_key = 'isitools26092024'
+    app.run(host=ip_address, port=5000, debug=False)
