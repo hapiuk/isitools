@@ -672,14 +672,14 @@ def generate_csv_for_visit(visit):
         primary_header = [
             "Compliance or Asset Ref No", "External Inspection Ref No", "Inspection Date", "Contractor",
             "Document", "Remedial Works", "Risk Rating", "Comments", "Archive", 
-            "Exclude from KPI", "Inspection Fully Completed", "Properties_Business Entity"
+            "Exclude from KPI", "Inspection Fully Completed", "Properties_Business Entity", "Site Name"
         ]
 
         # Secondary header (alternative column names)
         secondary_header = [
             "Asset No", "Inspection Ref / Job No", "Inspection Date", "Contractor",
             "Document", "Remedial Works", "Risk Rating", "Comments", "Archive?", 
-            "Exclude from KPI", "Inspection Fully Completed?", "Business Entity"
+            "Exclude from KPI", "Inspection Fully Completed?", "Business Entity", "Site Name"
         ]
 
         # Create CSV for visit data
@@ -703,7 +703,8 @@ def generate_csv_for_visit(visit):
                 "Archive": '',
                 "Exclude from KPI": '',
                 "Inspection Fully Completed": 'Yes' if visit.inspection_fully_completed else 'No',
-                "Properties_Business Entity": visit.properties_business_entity or ''
+                "Properties_Business Entity": visit.properties_business_entity or '',
+                "Site Name": visit.site_name or ''
             }
 
             # Write the visit data row
@@ -719,7 +720,8 @@ def generate_csv_for_visit(visit):
                 visit_data["Archive"],
                 visit_data["Exclude from KPI"],
                 visit_data["Inspection Fully Completed"],
-                visit_data["Properties_Business Entity"]
+                visit_data["Properties_Business Entity"],
+                visit_data["Site Name"]
             ])
 
         print(f"CSV generated for visit: {filepath}")
@@ -747,14 +749,14 @@ def generate_csv_for_remedial_actions(visit, inspections):
                 "Corrective Job Number", "Remedial Works Action Required Notes", "Priority",
                 "Target Completion Date", "Actual Completion Date", "PiC Comments", "Supplementary Notes",
                 "Property Inspection Ref No", "Send Email", "Compliance or Asset Type_External Ref No",
-                "Properties_Business Entity", "Site name"
+                "Properties_Business Entity", "Site Name"
             ]
 
             secondary_header = [
                 "Inspection Ref / Job No", "Remedial Reference Number", "Action Owner", "Date Action Raised",
                 "Corrective Job Number", "Remedial Works Action Required/Notes", "Priority",
                 "Target Completion Date", "Actual Completion Date", "PiC Comments", "Supplementary Notes",
-                "Property Inspection Ref. No.", "Send Email", "Asset No", "Business Entity", ""
+                "Property Inspection Ref. No.", "Send Email", "Asset No", "Business Entity", "Site Name"
             ]
 
             # Write the headers
@@ -780,7 +782,7 @@ def generate_csv_for_remedial_actions(visit, inspections):
                         # 'Send Email' intentionally left blank
                         "Compliance or Asset Type_External Ref No": inspection.get('compliance_or_asset_type_external_ref_no', ''),
                         "Properties_Business Entity": inspection.get('properties_business_entity', ''),
-                        "Site name": inspection.get('site_name', '')
+                        "Site Name": inspection.get('site_name', '')
                     }
 
                     # Write the inspection data row, ensuring correct order
@@ -800,7 +802,7 @@ def generate_csv_for_remedial_actions(visit, inspections):
                         '',  # Send Email column left blank
                         inspection_data["Compliance or Asset Type_External Ref No"],
                         inspection_data["Properties_Business Entity"],
-                        inspection_data["Site name"]
+                        inspection_data["Site Name"]
                     ])
 
         print(f"CSV generated for remedial actions: {filepath}")
