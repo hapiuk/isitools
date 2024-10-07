@@ -573,5 +573,24 @@
 
     <!-- Include JavaScript Files -->
     <script src="{{ url_for('static', filename='js/scripts.js') }}"></script>
+    <script>
+        window.addEventListener('load', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const zipUrl = urlParams.get('zip_url');
+
+            if (zipUrl) {
+                // Create a temporary link element and trigger the download
+                const a = document.createElement('a');
+                a.href = zipUrl;
+                a.download = zipUrl.split('/').pop();  // Use the filename from the URL for download
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+
+                // Optionally, you can also remove the query parameter after the download starts
+                history.replaceState(null, '', window.location.pathname);
+            }
+        });
+    </script>
 </body>
 </html>

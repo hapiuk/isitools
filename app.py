@@ -1,6 +1,6 @@
 import os, smtplib, random, string, requests, base64, logging, secrets, re, csv, zipfile
 from datetime import date, datetime, timedelta, timezone
-from flask import Flask, render_template, redirect, url_for, request, flash, jsonify, send_from_directory, send_file
+from flask import Flask, render_template, redirect, url_for, request, flash, jsonify, send_from_directory, send_file, session
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user, UserMixin
 from flask_migrate import Migrate
 from flask_mail import Mail, Message
@@ -263,8 +263,12 @@ def clear_folder(folder_path):
     for filename in os.listdir(folder_path):
         file_path = os.path.join(folder_path, filename)
         try:
-            if os.path.isfile(file_path):
+            # Only delete PDF and CSV files, ignore ZIP files
+            if os.path.isfile(file_path) and (filename.endswith('.pdf') or filename.endswith('.csv')):
                 os.remove(file_path)
+                print(f"Deleted file: {file_path}")
+            elif filename.endswith('.zip'):
+                print(f"Skipping ZIP file: {file_path}")
         except Exception as e:
             print(f"Failed to delete {file_path}. Reason: {e}")
 
@@ -578,7 +582,7 @@ def process_uploaded_pdfs(business_entity):
         try:
             # Fetch the visit from the database to include in the report package generation
             visit = Visit.query.get(visit_id)
-            generate_report_package(visit, inspections_data)
+            zip_file_path = generate_report_package(visit, inspections_data)
             print("Report package generated successfully.")
         except Exception as e:
             print(f"Error generating report package: {e}")
@@ -586,8 +590,23 @@ def process_uploaded_pdfs(business_entity):
 
         # Clear the upload folder after processing
         clear_folder(upload_folder)
+
+        # Remove only the PDFs and CSVs from the processed folder (keep ZIP files)
+        for filename in os.listdir(processed_folder):
+            file_path = os.path.join(processed_folder, filename)
+            if filename.endswith('.pdf') or filename.endswith('.csv'):
+                try:
+                    os.remove(file_path)
+                    print(f"Deleted {file_path}")
+                except Exception as e:
+                    print(f"Failed to delete {file_path}: {e}")
+
+        # Return the path to the generated ZIP file for download
+        return url_for('static', filename=f'processed/{os.path.basename(zip_file_path)}', _external=True)
+
     else:
         flash("No visit data extracted.", "error")
+        return None
 
 def insert_visit(extracted_data):
     try:
@@ -681,8 +700,8 @@ def generate_csv_for_visit(visit):
                 "Remedial Works": visit.remedial_works or '',
                 "Risk Rating": visit.risk_rating or '',
                 "Comments": visit.comments or '',
-                "Archive": 'Yes' if visit.archive else 'No',
-                "Exclude from KPI": 'Yes' if visit.exclude_from_kpi else 'No',
+                "Archive": '',
+                "Exclude from KPI": '',
                 "Inspection Fully Completed": 'Yes' if visit.inspection_fully_completed else 'No',
                 "Properties_Business Entity": visit.properties_business_entity or ''
             }
@@ -850,17 +869,28 @@ def aecom():
                 return redirect(url_for('dashboard'))
 
         try:
-            # Pass business_entity to process_uploaded_pdfs
-            process_uploaded_pdfs(business_entity)
+            # Process the uploaded PDFs and generate the ZIP file
+            zip_file_url = process_uploaded_pdfs(business_entity)
+
+            # Flash success message
             flash("Files processed and data inserted into the database successfully.", "success")
+
+            # Redirect back to the dashboard with the zip file link as part of the query parameters
+            return redirect(url_for('dashboard', zip_url=zip_file_url))
         except Exception as e:
             error_message = f"Error processing files: {str(e)}"
             print(error_message)
             flash(error_message, "error")
-
-        return redirect(url_for('dashboard'))
+            return redirect(url_for('dashboard'))
 
     return redirect(url_for('dashboard'))
+
+@app.route('/clear-zip-url', methods=['POST'])
+@login_required
+def clear_zip_url():
+    session.pop('zip_file_url', None)  # Remove the zip file URL from the session
+    return '', 204  # Return a success response without any content
+
 
 @app.route('/api/aecom/historic-reports')
 @login_required
@@ -897,12 +927,30 @@ def api_delete_aecom_historic_report(report_id):
         return jsonify({'error': 'Unauthorized access'}), 403
 
     # Fetch the report by ID
-    report = Visit.query.get(report_id)
-    if report and report.properties_business_entity == 'AECOM':
+    report = db.session.get(Visit, report_id)
+
+    if report:
         try:
+            # Delete related inspections
+            inspections = Inspection.query.filter_by(visit_id=report_id).all()
+            for inspection in inspections:
+                db.session.delete(inspection)
+
+            # Extract the ZIP file path from the 'link' column
+            zip_file_path = os.path.join(app.root_path, report.link.lstrip('/'))  # Convert to absolute path
+
+            # Check if the file is a ZIP and exists, then delete
+            if zip_file_path.endswith('.zip') and os.path.exists(zip_file_path):
+                os.remove(zip_file_path)
+                print(f"Deleted ZIP file: {zip_file_path}")
+            else:
+                print(f"ZIP file not found or incorrect file type: {zip_file_path}")
+
+            # Delete the visit entry itself
             db.session.delete(report)
             db.session.commit()
-            return jsonify({'success': 'Report deleted'}), 200
+
+            return jsonify({'success': 'Report and related data deleted successfully.'}), 200
         except Exception as e:
             db.session.rollback()
             logging.error(f"Failed to delete report {report_id}: {e}")

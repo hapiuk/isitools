@@ -19,6 +19,15 @@ const rowsPerPageAECOM = 10;
 // AECOM STUFF with Debugging
 // =====================
 
+function showDeleteConfirm(itemId, itemType) {
+    itemToDelete = itemId;
+    itemType = itemType;
+    document.getElementById('deleteInput').value = ''; // Clear input field
+    document.getElementById('confirmDeleteButton').disabled = true; // Disable delete button initially
+    openModal('deleteConfirmModal'); // Open the delete confirmation modal
+}
+
+
 function fetchHistoricReports(page = 1, perPage = rowsPerPageAECOM) {
     fetch(`/api/aecom/historic-reports?page=${page}&per_page=${perPage}`)
         .then(response => response.json())
@@ -35,7 +44,7 @@ function fetchHistoricReports(page = 1, perPage = rowsPerPageAECOM) {
                         <td>${new Date(report.visit_date).toLocaleDateString()}</td>
                         <td>
                             <button class="download-button" onclick="downloadReport('${report.link}')">Download</button>
-                            <button class="delete-button" onclick="confirmDelete('${report.id}')">Delete</button>
+                            <button class="delete-button" onclick="showDeleteConfirm(${report.id}, 'aecom')">Delete</button>
                         </td>
                     `;
                     tableBody.appendChild(row);
@@ -97,6 +106,81 @@ function changePage(direction, type) {
             fetchHistoricReports(newPage);
         }
     }
+}
+
+// =====================
+// AECOM Processing with Automatic ZIP Download
+// =====================
+document.querySelector('.modal-form').addEventListener('submit', function(e) {
+    e.preventDefault(); // Prevent the default form submission
+
+    const formData = new FormData(this);
+
+    fetch(this.action, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.zip_url) {
+            // Trigger the file download
+            const downloadLink = document.createElement('a');
+            downloadLink.href = data.zip_url;
+            downloadLink.download = data.zip_url.split('/').pop(); // Extract filename
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            document.body.removeChild(downloadLink);
+
+            // Optionally redirect to dashboard or show a success message
+            alert(data.message);
+            window.location.href = '/dashboard';  // Redirect to dashboard
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error processing files:', error);
+        alert('An error occurred. Please try again.');
+    });
+});
+
+function processAECOMReports() {
+    const form = document.querySelector('.modal-form');
+    const formData = new FormData(form);
+
+    fetch(form.action, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && data.link) { // Assuming 'link' is returned from your server
+            flashMessage('Files processed successfully.', 'success');
+
+            // Trigger download using the link from the 'visits' table
+            triggerFileDownload(data.link);
+
+            // Optionally, redirect to the dashboard after a short delay
+            setTimeout(() => {
+                window.location.href = '/dashboard'; // Adjust the redirect path if needed
+            }, 1500);
+        } else {
+            flashMessage(`Processing failed: ${data.error}`, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error processing AECOM reports:', error);
+        flashMessage('An error occurred while processing the reports.', 'error');
+    });
+}
+
+function triggerFileDownload(fileUrl) {
+    const a = document.createElement('a');
+    a.href = fileUrl;  // The fileUrl is dynamically loaded from the 'link' column
+    a.download = '';  // The browser will use the file name in the link
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
 }
 
 function downloadReport(visitLink) {
@@ -550,7 +634,13 @@ function showDeleteConfirm(itemId, type) {
  */
 function confirmDelete() {
     if (itemToDelete !== null && itemType !== null) {
-        fetch(`/api/${itemType}/${itemToDelete}`, { method: 'DELETE' })
+        // For AECOM reports, use the specific API route
+        let apiEndpoint = `/api/${itemType}/${itemToDelete}`;
+        if (itemType === 'aecom') {
+            apiEndpoint = `/api/aecom/historic-reports/${itemToDelete}`;
+        }
+
+        fetch(apiEndpoint, { method: 'DELETE' })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
@@ -559,7 +649,7 @@ function confirmDelete() {
                         location.reload(); // Reload the page to refresh data
                     }, 500); // Slight delay to show the flash message before reload
                 } else {
-                    flashMessage('Failed to delete item.', 'error');
+                    flashMessage(`Failed to delete item: ${data.error}`, 'error');
                 }
             })
             .catch(error => {
