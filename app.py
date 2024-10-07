@@ -23,9 +23,9 @@ app.secret_key = 'isitools26092024'  # Replace with your actual secret key
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(BASE_DIR, 'static', 'db', 'isitools.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['UPLOAD_FOLDER'] = 'static/uploads'
-app.config['MERGED_FOLDER'] = 'static/merged'
-app.config['PROCESSED_FOLDER'] = 'static/processed'
+app.config['UPLOAD_FOLDER'] = os.path.join(BASE_DIR, 'static', 'uploads')
+app.config['MERGED_FOLDER'] = os.path.join(BASE_DIR, 'static', 'merged')
+app.config['PROCESSED_FOLDER'] = os.path.join(BASE_DIR, 'static', 'processed')
 
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs(app.config['MERGED_FOLDER'], exist_ok=True)
@@ -150,7 +150,7 @@ def get_oauth_token():
         print(f"Error retrieving OAuth token: {e}. Response content: {error_content}")
         return None
 
-def send_user_email(to_address, subject, password):
+def send_user_email(to_address, subject, html_content):
     settings = EmailSettings.query.first()
 
     if not settings:
@@ -162,43 +162,9 @@ def send_user_email(to_address, subject, password):
         if not token:
             return False
 
-        # Correct path to the logo image
-        logo_path = os.path.join(BASE_DIR, 'static', 'images', 'logos', 'Logo.png')
-        logging.debug(f"Attempting to load logo from path: {logo_path}")
-
-        # Load and encode the logo image
-        try:
-            with open(logo_path, 'rb') as logo_file:
-                logo_data = base64.b64encode(logo_file.read()).decode('utf-8')
-        except FileNotFoundError:
-            error_message = f"Logo file not found at {logo_path}. Please check the file path."
-            flash(error_message, "error")
-            logging.error(error_message)
-            logo_data = ''  # Skip the logo if not found
-
         # Set up the Graph API endpoint for sending mail
         sender_email = settings.default_sender_email
         graph_api_url = f"https://graph.microsoft.com/v1.0/users/{sender_email}/sendMail"
-
-        # Prepare the HTML content of the email
-        html_content = f"""
-        <html>
-        <body style="font-family: Arial, sans-serif; line-height: 1.6;">
-            <div style="text-align: center;">
-                <img src="data:image/png;base64,{logo_data}" alt="ISI Tools Logo" style="max-width: 200px; margin-bottom: 20px;">
-            </div>
-            <p>Dear User,</p>
-            <p>Your account has been created successfully. Here are your login details:</p>
-            <ul>
-                <li><strong>Email:</strong> {to_address}</li>
-                <li><strong>Password:</strong> {password}</li>
-            </ul>
-            <p>You can log in using the following link:</p>
-            <p><a href="http://isitools.local:5000" style="color: #0F70B7; text-decoration: none;">Login to ISI Tools</a></p>
-            <p>Best regards,<br>ISI Tools Admin</p>
-        </body>
-        </html>
-        """
 
         # Prepare the email payload
         email_message = {
@@ -232,9 +198,6 @@ def send_user_email(to_address, subject, password):
         # Send the request to the Graph API
         response = requests.post(graph_api_url, json=email_message, headers=headers)
 
-        # Log response details for debugging
-        logging.debug(f"Response status: {response.status_code}, Response content: {response.content}")
-
         if response.status_code == 202:
             flash('Email sent successfully.', 'success')
             return True
@@ -245,8 +208,7 @@ def send_user_email(to_address, subject, password):
             return False
 
     except requests.exceptions.RequestException as e:
-        error_content = response.content.decode() if response else 'No response content'
-        error_message = f"Failed to send email via Graph API: {e}. Response content: {error_content}"
+        error_message = f"Failed to send email via Graph API: {e}. Response content: {response.content.decode()}"
         flash(error_message, 'error')
         logging.error(error_message)
         return False
@@ -683,23 +645,63 @@ def insert_inspections(inspections_data):
 
 def generate_csv_for_visit(visit):
     try:
-        # Exclude 'id' column from the visit data
-        visit_data = {key: value for key, value in visit.__dict__.items() if key not in ['_sa_instance_state', 'id']}
-        
-        # Construct the filename based on the naming convention
-        filename = f"{visit.properties_business_entity}.{visit.id}-PWR-{visit.inspection_date.strftime('%d%m%Y')}-{visit.id}.csv"
+        # Construct the filename with entity, date, and visit ID
+        filename = f"{visit.properties_business_entity}-PWR-{visit.inspection_date.strftime('%d%m%Y')}.csv"
         filepath = os.path.join(app.config['PROCESSED_FOLDER'], filename)
+
+        # Primary header (official column names)
+        primary_header = [
+            "Compliance or Asset Ref No", "External Inspection Ref No", "Inspection Date", "Contractor",
+            "Document", "Remedial Works", "Risk Rating", "Comments", "Archive", 
+            "Exclude from KPI", "Inspection Fully Completed", "Properties_Business Entity"
+        ]
+
+        # Secondary header (alternative column names)
+        secondary_header = [
+            "Asset No", "Inspection Ref / Job No", "Inspection Date", "Contractor",
+            "Document", "Remedial Works", "Risk Rating", "Comments", "Archive?", 
+            "Exclude from KPI", "Inspection Fully Completed?", "Business Entity"
+        ]
 
         # Create CSV for visit data
         with open(filepath, 'w', newline='') as csvfile:
             writer = csv.writer(csvfile)
-            
-            # Write headers based on dynamic visit attributes
-            headers = list(visit_data.keys())
-            writer.writerow(headers)
-            
-            # Write visit data row
-            writer.writerow([visit_data[key] for key in headers])
+
+            # Write the headers
+            writer.writerow(primary_header)
+            writer.writerow(secondary_header)
+
+            # Extract visit data and convert None values to empty strings
+            visit_data = {
+                "Compliance or Asset Ref No": visit.compliance_or_asset_ref_no or '',
+                "External Inspection Ref No": visit.external_inspection_ref_no or '',
+                "Inspection Date": visit.inspection_date.strftime('%d/%m/%Y') if visit.inspection_date else '',
+                "Contractor": visit.contractor or '',
+                "Document": visit.document or '',
+                "Remedial Works": visit.remedial_works or '',
+                "Risk Rating": visit.risk_rating or '',
+                "Comments": visit.comments or '',
+                "Archive": 'Yes' if visit.archive else 'No',
+                "Exclude from KPI": 'Yes' if visit.exclude_from_kpi else 'No',
+                "Inspection Fully Completed": 'Yes' if visit.inspection_fully_completed else 'No',
+                "Properties_Business Entity": visit.properties_business_entity or ''
+            }
+
+            # Write the visit data row
+            writer.writerow([
+                visit_data["Compliance or Asset Ref No"],
+                visit_data["External Inspection Ref No"],
+                visit_data["Inspection Date"],
+                visit_data["Contractor"],
+                visit_data["Document"],
+                visit_data["Remedial Works"],
+                visit_data["Risk Rating"],
+                visit_data["Comments"],
+                visit_data["Archive"],
+                visit_data["Exclude from KPI"],
+                visit_data["Inspection Fully Completed"],
+                visit_data["Properties_Business Entity"]
+            ])
 
         print(f"CSV generated for visit: {filepath}")
         return filename
@@ -710,22 +712,77 @@ def generate_csv_for_visit(visit):
 def generate_csv_for_remedial_actions(visit, inspections):
     try:
         # Construct the filename for remedial actions CSV
-        filename = f"{visit.properties_business_entity}.{visit.id}-PWR-{visit.inspection_date.strftime('%d%m%Y')}-{visit.id}_REMEDIALACTIONS.csv"
+        filename = f"{visit.properties_business_entity}-PWR-{visit.inspection_date.strftime('%d%m%Y')}_REMEDIALACTIONS.csv"
         filepath = os.path.join(app.config['PROCESSED_FOLDER'], filename)
+
+        if not inspections:
+            raise ValueError("No inspections data to generate CSV.")
 
         # Create CSV for remedial actions
         with open(filepath, 'w', newline='') as csvfile:
             writer = csv.writer(csvfile)
 
-            # Write headers dynamically, excluding 'id' and 'visit_id'
-            if inspections:
-                first_inspection = inspections[0]
-                headers = [key for key in first_inspection.keys() if key not in ['id', 'visit_id']]
-                writer.writerow(headers)
+            # Define the primary and secondary headers
+            primary_header = [
+                "Inspection Ref No", "Remedial Reference Number", "Action Owner", "Date Action Raised",
+                "Corrective Job Number", "Remedial Works Action Required Notes", "Priority",
+                "Target Completion Date", "Actual Completion Date", "PiC Comments", "Supplementary Notes",
+                "Property Inspection Ref No", "Send Email", "Compliance or Asset Type_External Ref No",
+                "Properties_Business Entity", "Site name"
+            ]
 
-                # Write rows for each inspection entry
-                for inspection in inspections:
-                    writer.writerow([inspection[key] for key in headers])
+            secondary_header = [
+                "Inspection Ref / Job No", "Remedial Reference Number", "Action Owner", "Date Action Raised",
+                "Corrective Job Number", "Remedial Works Action Required/Notes", "Priority",
+                "Target Completion Date", "Actual Completion Date", "PiC Comments", "Supplementary Notes",
+                "Property Inspection Ref. No.", "Send Email", "Asset No", "Business Entity", ""
+            ]
+
+            # Write the headers
+            writer.writerow(primary_header)
+            writer.writerow(secondary_header)
+
+            # Write rows for each inspection entry, handling None values and skipping 'send_email'
+            for inspection in inspections:
+                if inspection.get('priority') in ['Moderate', 'Substantial', 'Intolerable']:  # Only include relevant priorities
+                    inspection_data = {
+                        "Inspection Ref No": inspection.get('inspection_ref_no', ''),
+                        "Remedial Reference Number": inspection.get('remedial_reference_number', ''),
+                        "Action Owner": inspection.get('action_owner', ''),
+                        "Date Action Raised": inspection.get('date_action_raised', '').strftime('%d/%m/%Y') if inspection.get('date_action_raised') else '',
+                        "Corrective Job Number": inspection.get('corrective_job_number', ''),
+                        "Remedial Works Action Required Notes": inspection.get('remedial_works_action_required_notes', ''),
+                        "Priority": inspection.get('priority', ''),
+                        "Target Completion Date": inspection.get('target_completion_date', '').strftime('%d/%m/%Y') if inspection.get('target_completion_date') else '',
+                        "Actual Completion Date": inspection.get('actual_completion_date', '').strftime('%d/%m/%Y') if inspection.get('actual_completion_date') else '',
+                        "PiC Comments": inspection.get('pic_comments', ''),
+                        "Supplementary Notes": inspection.get('supplementary_notes', ''),
+                        "Property Inspection Ref No": inspection.get('property_inspection_ref_no', ''),
+                        # 'Send Email' intentionally left blank
+                        "Compliance or Asset Type_External Ref No": inspection.get('compliance_or_asset_type_external_ref_no', ''),
+                        "Properties_Business Entity": inspection.get('properties_business_entity', ''),
+                        "Site name": inspection.get('site_name', '')
+                    }
+
+                    # Write the inspection data row, ensuring correct order
+                    writer.writerow([
+                        inspection_data["Inspection Ref No"],
+                        inspection_data["Remedial Reference Number"],
+                        inspection_data["Action Owner"],
+                        inspection_data["Date Action Raised"],
+                        inspection_data["Corrective Job Number"],
+                        inspection_data["Remedial Works Action Required Notes"],
+                        inspection_data["Priority"],
+                        inspection_data["Target Completion Date"],
+                        inspection_data["Actual Completion Date"],
+                        inspection_data["PiC Comments"],
+                        inspection_data["Supplementary Notes"],
+                        inspection_data["Property Inspection Ref No"],
+                        '',  # Send Email column left blank
+                        inspection_data["Compliance or Asset Type_External Ref No"],
+                        inspection_data["Properties_Business Entity"],
+                        inspection_data["Site name"]
+                    ])
 
         print(f"CSV generated for remedial actions: {filepath}")
         return filename
@@ -740,22 +797,26 @@ def generate_report_package(visit, inspections):
         visit_csv = generate_csv_for_visit(visit)
         remedial_actions_csv = generate_csv_for_remedial_actions(visit, inspections)
 
-        processed_folder = app.config['PROCESSED_FOLDER']
+        processed_folder = os.path.normpath(app.config['PROCESSED_FOLDER'])
         pdf_path = os.path.join(processed_folder, pdf_filename)
         visit_csv_path = os.path.join(processed_folder, visit_csv)
         remedial_csv_path = os.path.join(processed_folder, remedial_actions_csv)
 
-        zip_filename = f"{visit.properties_business_entity}.{visit.id}-PWR-{visit.inspection_date.strftime('%d%m%Y')}-{visit.id}.zip"
+        zip_filename = f"{visit.properties_business_entity}-PWR-{visit.inspection_date.strftime('%d%m%Y')}.zip"
         zip_path = os.path.join(processed_folder, zip_filename)
 
         # Create a zip file containing the PDF and both CSVs
-        with zipfile.ZipFile(zip_path, 'w') as zipf:
-            if os.path.exists(pdf_path):
-                zipf.write(pdf_path, os.path.basename(pdf_path))
-            if os.path.exists(visit_csv_path):
-                zipf.write(visit_csv_path, os.path.basename(visit_csv_path))
-            if os.path.exists(remedial_csv_path):
-                zipf.write(remedial_csv_path, os.path.basename(remedial_csv_path))
+        try:
+            # Zip file creation
+            with zipfile.ZipFile(zip_path, 'w') as zipf:
+                if os.path.exists(pdf_path):
+                    zipf.write(pdf_path, os.path.basename(pdf_path))
+                if os.path.exists(visit_csv_path):
+                    zipf.write(visit_csv_path, os.path.basename(visit_csv_path))
+                if os.path.exists(remedial_csv_path):
+                    zipf.write(remedial_csv_path, os.path.basename(remedial_csv_path))
+        except Exception as e:
+            print(f"Error during zip file creation: {e}")
 
         # Store the full static path in the link column
         visit.link = f"/static/processed/{zip_filename}"
@@ -944,26 +1005,15 @@ def send_password_reset():
 
     if user:
         # Call the function to generate reset token and set expiration
-        generate_reset_token(user)  # This function sets the reset_token and expiration
+        generate_reset_token(user)
         
         # Construct the reset link
         reset_link = url_for('reset_password', token=user.reset_token, _external=True)
 
-        # Send the password reset email
+        # Send the password reset email using the template
         subject = "Password Reset Request"
-        body = f"""
-        Dear {user.first_name},
-
-        You have requested to reset your password. Please click the link below to reset your password:
-
-        {reset_link}
-
-        If you did not request this, please ignore this email.
-
-        Best regards,
-        Your Team
-        """
-        send_user_email(user.email, subject, body)
+        html_content = render_template('password_reset_email.html', first_name=user.first_name, reset_link=reset_link)
+        send_user_email(user.email, subject, html_content)
 
         return jsonify({'status': 'success', 'message': 'Password reset link sent.'})
     else:

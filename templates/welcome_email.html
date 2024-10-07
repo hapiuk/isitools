@@ -1,0 +1,13 @@
+<html>
+<body style="font-family: Arial, sans-serif; line-height: 1.6;">
+    <p>Dear {{ first_name }},</p>
+    <p>Your account has been created successfully. Here are your login details:</p>
+    <ul>
+        <li><strong>Email:</strong> {{ email }}</li>
+        <li><strong>Password:</strong> {{ password }}</li>
+    </ul>
+    <p>You can log in using the following link:</p>
+    <p><a href="http://isitools.local:5000" style="color: #0F70B7; text-decoration: none;">Login to ISI Tools</a></p>
+    <p>Best regards,<br>ISI Tools Admin</p>
+</body>
+</html>
